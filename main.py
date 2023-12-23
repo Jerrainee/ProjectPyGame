@@ -7,7 +7,11 @@ file_name = 'data/levels/level1.tmx'
 
 FPS = 60
 STEP = 5
-GRAVITY = 1
+GRAVITY = 0.5
+moving_left = False
+moving_right = False
+moving_down = False
+jump = False
 pygame.init()
 
 size = WIDTH, HEIGHT = 1280, 720
@@ -62,49 +66,49 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group, all_sprites)
         self.image = player_image
-        self.direction = False
-        self.fall_y = 3
+        self.fall_y = 0
         self.in_air = False
         self.rect = self.image.get_rect().move(
             pos_x, pos_y)
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
 
-    def update(self, *args, **kwargs):
-        key = args[0]
-        move = (0, 0)
-        if key[pygame.K_w] or key[pygame.K_SPACE]:
-            move = (0, -STEP * 3)
-        if key[pygame.K_s]:
-            move = (0, STEP)
-        if key[pygame.K_a]:
-            move = (-STEP, 0)
-            self.direction = True
-        if key[pygame.K_d]:
-            move = (STEP, 0)
-            self.direction = False
+    def move(self, moving_left, moving_right, jump, moving_down):
+        dx = 0
+        dy = 0
 
-        self.rect = self.rect.move(*move)
-      #  self.gravity()
+        if moving_left:
+            dx = -STEP
+        if moving_right:
+            dx = STEP
+        if jump and self.in_air == False:
+            self.fall_y = -10
+            self.in_air = True
+            self.jump = False
 
-        if pygame.sprite.spritecollideany(self, wall_group):
-            move = (-move[0], -move[1])
-            self.rect = self.rect.move(*move)
+        self.fall_y += GRAVITY
+        if self.fall_y > 10:
+            self.fall_y = 10
+        dy += self.fall_y
+
         if pygame.sprite.spritecollideany(self, ladder_group):
-            if key[pygame.K_w]:
-                move = (0, -STEP)
-                print('лестница вверх')
-                self.rect = self.rect.move(*move)
-
-    def gravity(self):
-     #   self.fall_y += GRAVITY
-        if pygame.sprite.spritecollideany(self, wall_group) and self.fall_y != 0:
-            move = (0, -3)
-            self.rect = self.rect.move(*move)
-            self.fall_y = 0
-        else:
-            self.fall_y = 3
-        move = (0, self.fall_y)
-
-        self.rect = self.rect.move(*move)
+            self.in_air = False
+            if jump:
+                dy -= 1
+            if moving_down:
+                dy += 5
+        self.rect.x += dx
+        if pygame.sprite.spritecollideany(self, wall_group):
+            self.rect.x -= dx
+        self.rect.y += dy
+        if pygame.sprite.spritecollideany(self, wall_group):
+            if self.fall_y < 0:
+                self.rect.y -= dy - 0.1
+                self.fall_y = 0
+            if self.fall_y > 0:
+                self.rect.y -= dy + 0.1
+                self.fall_y = 0
+                self.in_air = False
 
 
 class Camera:
@@ -139,7 +143,7 @@ def generate_level(filename):
                         if layer == 1:
                             temp.add(ladder_group)
                         if layer == 3:
-                            new_player = Player((x * 8 * 5) - 1, (y * 8 * 5) - 1)
+                            new_player = Player((x * 8 * 5), (y * 8 * 5) - 75)
                         if layer == 2:
                             temp.add(wall_group)
                         if layer == 0:
@@ -156,15 +160,34 @@ player = generate_level(file_name)
 if __name__ == '__main__':
     running = True
     camera = Camera()
-    pygame.key.set_repeat(1, 15)
+    # pygame.key.set_repeat(1, 15)
     while running:
         screen.fill(pygame.Color("black"))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
-                player.update(pygame.key.get_pressed())
-    #    player.gravity()
+                if event.key == pygame.K_a:
+                    moving_left = True
+                if event.key == pygame.K_d:
+                    moving_right = True
+                if event.key == pygame.K_SPACE or event.key == pygame.K_w:
+                    jump = True
+                if event.key == pygame.K_s:
+                    moving_down = True
+
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_a:
+                    moving_left = False
+                if event.key == pygame.K_d:
+                    moving_right = False
+                if event.key == pygame.K_SPACE or event.key == pygame.K_w:
+                    jump = False
+                if event.key == pygame.K_s:
+                    moving_down = False
+        player.move(moving_left, moving_right, jump, moving_down)
+
+        #    player.gravity()
         camera.update(player)
         for sprite in all_sprites:
             camera.apply(sprite)
