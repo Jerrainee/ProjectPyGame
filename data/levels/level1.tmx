@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="24" tilewidth="8" tileheight="8" infinite="0" nextlayerid="5" nextobjectid="1">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="24" tilewidth="8" tileheight="8" infinite="0" nextlayerid="7" nextobjectid="1">
  <tileset firstgid="1" source="../images/tiles/tiles1.tsx"/>
  <layer id="2" name="background" width="40" height="24">
   <data encoding="base64" compression="zlib">
-   eJztwwEJAAAMBKHrn+DjrsdQcNVUVVX1+QN9yDof
+   eJybwcDAMGMUj3i8GorXAPHaQeCewYhxhcvHQeC2UTyKR/EoHigMKhtXDwJ3jOJRjA9/p5M9oLwwVNpR3EDMA8S8UP5QcfcoHsWUYgAIZDn8
+  </data>
+ </layer>
+ <layer id="5" name="floor" width="40" height="24">
+  <data encoding="base64" compression="zlib">
+   eJxjYBgFo2AUDGXgNtAOGAU0A04D7QAygSvDaLokFiCHEyi+nbGoGarpgNYAFl4uA+0QEsFo/hgFo4B2IGagHTAKhgQAALe+A9E=
   </data>
  </layer>
  <layer id="4" name="ladders" width="40" height="24">
@@ -13,7 +18,12 @@
  </layer>
  <layer id="1" name="walls" width="40" height="24">
   <data encoding="base64" compression="zlib">
-   eJztVltuwkAMdH55HSJAz4EC4ga9D2cjEPUMDVTkCgT6jU1sYcxSIFTZRWKkEato2UzGjzXAG2+EjzkyRS6QS2TmV84FvpE5coVcI38afHcCMCN/smoNY+TE7IkjgD5ygBwiP6IGBULlT5OePIothKkv4d9WFKY+gY0v5d8UqroNoVYpvr+O5yHkJfkUc01SvHXtiu7E+U//oLzsNdxLNMQv2+8k/yi+GzjdGdZf34g99uRn8Qp38qei7zq3IH1fUMXeFX/t7397S2ffihnp+6u29cxT11udP3pdqHNlppH7JGUWN/RR76S40zzm6v33QM90dr1znCs5l/O+DRznrhHW+KjPlHXB+57JzZJ17A1Fn/VH10QO5/UhXDP1s7r+tfH9HWTXcMf67HdrfeUVfS7WvYMOPZtq+A==
+   eJztVltuwjAQ3PxC6SFCyzlQK3GDXji0VbkCgSq5Agn57k6zVhc3D6wE44+MNFJkBXs8s7uEaMKE8JEwt8x35gfz875y/mHPTJkH5pH57fl8+NPlSRwRLZlPzGfmKvKlrAb88e2JC04Utr5ZFLa+tnz76tIXkG/VsB5KXcYtPdmmOxSgLh8HzpJbznbkmw3c18zOHY0/2+ORZnJB9V3x/+OrXlxym0d1LQND6+VawI83xb7cZqLL1zyAvi+qs2/KX/sLb3NZHyNf7N2XGfR1ZaW/eYxnh57f2ND1o59zte8L85W5oT9PtvJO11moN+SOnq1Ea0pu/ulvOvu5bNjL1Fwq72X0OzvW3ONr7XUi+lO6rE1XfYXoOFs0+mx/dE+Ys819oNVkkMu6eVdrctGHvn9gLiyWos/uNa2voMv+7aK+p0v9/QCLrHyi
+  </data>
+ </layer>
+ <layer id="6" name="enemies" width="40" height="24">
+  <data encoding="base64" compression="zlib">
+   eJztwQENAAAAwqD3T20PBxQAAAD8Gw8AAAE=
   </data>
  </layer>
  <layer id="3" name="player" width="40" height="24">

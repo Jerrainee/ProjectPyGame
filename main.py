@@ -103,10 +103,10 @@ class Player(pygame.sprite.Sprite):
         self.rect.y += dy
         if pygame.sprite.spritecollideany(self, wall_group):
             if self.fall_y < 0:
-                self.rect.y -= dy - 0.1
+                self.rect.y -= (dy - 0.1)
                 self.fall_y = 0
             if self.fall_y > 0:
-                self.rect.y -= dy + 0.1
+                self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
                 self.in_air = False
 
@@ -133,18 +133,22 @@ def generate_level(filename):
         map = pytmx.load_pygame(filename)
         tile_size = map.tilewidth
         new_player = None
-        for layer in range(4):
+        for layer in range(6):
             for y in range(map.height):
                 for x in range(map.width):
                     image = map.get_tile_image(x, y, layer)
                     if image:
                         temp = Tile(pygame.transform.scale(image, (tile_size * 5, tile_size * 5)), x * tile_size * 5,
                                     y * tile_size * 5, 8, 8)
-                        if layer == 1:
-                            temp.add(ladder_group)
-                        if layer == 3:
+                        if layer == 5:
                             new_player = Player((x * 8 * 5), (y * 8 * 5) - 75)
+                        if layer == 4:
+                            pass
+                        if layer == 3:
+                            temp.add(wall_group)
                         if layer == 2:
+                            temp.add(ladder_group)
+                        if layer == 1:
                             temp.add(wall_group)
                         if layer == 0:
                             temp.add(background_group)
