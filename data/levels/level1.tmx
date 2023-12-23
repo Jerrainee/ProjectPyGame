@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="24" tilewidth="8" tileheight="8" infinite="0" nextlayerid="5" nextobjectid="1">
+ <tileset firstgid="1" source="../images/tiles/tiles1.tsx"/>
+ <layer id="2" name="background" width="40" height="24">
+  <data encoding="base64" compression="zlib">
+   eJztwwEJAAAMBKHrn+DjrsdQcNVUVVX1+QN9yDof
+  </data>
+ </layer>
+ <layer id="4" name="ladders" width="40" height="24">
+  <data encoding="base64" compression="zlib">
+   eJztzjEBACAIADCsRAxi2D+EDeDEY0uwCAAAmOXZHvTq89/1g3UPuBgBRQ==
+  </data>
+ </layer>
+ <layer id="1" name="walls" width="40" height="24">
+  <data encoding="base64" compression="zlib">
+   eJztVltuwkAMdH55HSJAz4EC4ga9D2cjEPUMDVTkCgT6jU1sYcxSIFTZRWKkEato2UzGjzXAG2+EjzkyRS6QS2TmV84FvpE5coVcI38afHcCMCN/smoNY+TE7IkjgD5ygBwiP6IGBULlT5OePIothKkv4d9WFKY+gY0v5d8UqroNoVYpvr+O5yHkJfkUc01SvHXtiu7E+U//oLzsNdxLNMQv2+8k/yi+GzjdGdZf34g99uRn8Qp38qei7zq3IH1fUMXeFX/t7397S2ffihnp+6u29cxT11udP3pdqHNlppH7JGUWN/RR76S40zzm6v33QM90dr1znCs5l/O+DRznrhHW+KjPlHXB+57JzZJ17A1Fn/VH10QO5/UhXDP1s7r+tfH9HWTXcMf67HdrfeUVfS7WvYMOPZtq+A==
+  </data>
+ </layer>
+ <layer id="3" name="player" width="40" height="24">
+  <data encoding="base64" compression="zlib">
+   eJztzgENAAAIA6D3z2JIY9w5SEACAAB8Mu0AHLUl7gCt
+  </data>
+ </layer>
+</map>
