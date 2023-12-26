@@ -33,6 +33,8 @@ mob_group = pygame.sprite.Group()
 background_group = pygame.sprite.Group()
 ladder_group = pygame.sprite.Group()
 item_group = pygame.sprite.Group()
+exit_group = pygame.sprite.Group()
+trap_group = pygame.sprite.Group()
 
 
 def load_image(name, color_key=None):
@@ -75,6 +77,9 @@ class Player(pygame.sprite.Sprite):
         self.fall_y = 0
         self.in_air = False
         self.sight = 0
+        self.dash_cooldown = True
+        self.dash_speed = 0
+        self.n_dash = 1
         self.rect = self.image.get_rect().move(
             pos_x, pos_y)
         self.width = self.image.get_width()
@@ -94,23 +99,47 @@ class Player(pygame.sprite.Sprite):
             print('jump')
             self.fall_y = -10.5
             self.in_air = True
-            jump = False
-        if dash:
+
+        #dash
+        if dash and self.dash_cooldown and self.n_dash >= 1:
             if self.sight:
-                dx = STEP * 6
+                self.dash_speed = 8
             else:
-                dx = -STEP * 6
+                self.dash_speed = -8
+            self.dash_cooldown = False
+            self.n_dash = 0
+        if self.n_dash < 1:
+            self.n_dash += 0.02
+            if not self.in_air:
+                self.n_dash += 0.05
+        else:
+            self.dash_cooldown = True
 
         self.fall_y += GRAVITY
         if self.fall_y > 11:
             self.fall_y = 11
-        dy += self.fall_y
 
         self.rect.x += dx
+        if self.dash_speed:
+            self.fall_y = 0.1
+            self.rect.x += STEP * self.dash_speed
+            if pygame.sprite.spritecollideany(self, wall_group):
+                self.rect.x -= STEP * self.dash_speed
+            if self.sight == 0:
+                self.dash_speed += 1
+            else:
+                self.dash_speed -= 1
+        dy += self.fall_y
+
         if pygame.sprite.spritecollideany(self, wall_group):
             self.rect.x -= dx
         #    self.fall_y = 1
         self.rect.y += dy
+        if pygame.sprite.spritecollideany(self, ladder_group) and not moving_down:
+            self.rect.y -= dy
+            self.in_air = False
+            if jump:
+                self.rect.y -= STEP * 0.8
         if pygame.sprite.spritecollideany(self, wall_group):
             if self.fall_y < 0:
                 self.rect.y -= (dy - 0.1)
@@ -121,14 +150,12 @@ class Player(pygame.sprite.Sprite):
                 self.in_air = False
         else:
             self.in_air = True
-          #  print("in_air")
-        if pygame.sprite.spritecollideany(self, ladder_group):
-        #    self.rect.y -= dy * 0.2
-            self.in_air = False
-            if jump:
-                dy -= 1
-            if moving_down:
-                dy += 5
+        if pygame.sprite.spritecollideany(self, trap_group):
+            screen.fill(pygame.Color("red"))
+            self.rect.x -= dx * 5
+            self.rect.y -= dy * 5
+
+
 class Items(pygame.sprite.Sprite):
     def __init__(self, n, item_type, pos_x, pos_y):
         super().__init__(item_group, all_sprites)
@@ -174,21 +201,26 @@ def generate_level(filename):
         tile_size = map.tilewidth
         new_player = None
         new_item = None
-        for layer in range(7):
+        for layer in range(9):
             for y in range(map.height):
                 for x in range(map.width):
                     image = map.get_tile_image(x, y, layer)
                     if image:
                         temp = Tile(pygame.transform.scale(image, (tile_size * 5, tile_size * 5)), x * tile_size * 5,
                                     y * tile_size * 5, 8, 8)
-                        if layer == 6:
+                        if layer == 8:
                             new_player = Player((x * 8 * 5), (y * 8 * 5) - 75)
-                        if layer == 5:
+                        if layer == 7:
                             if LEVEL_COUNT == 0:
                                 new_item = Items(0, dash_image, (x * 8 * 5), (y * 8 * 5) - 50)
                             temp.add(item_group)
+                        if layer == 6:
+                            temp.add(exit_group)
+                        if layer == 5:
+                            if LEVEL_COUNT != 0:
+                                temp.add(mob_group)
                         if layer == 4:
-                            pass
+                            temp.add(trap_group)
                         if layer == 3:
                             temp.add(wall_group)
                         if layer == 2:
