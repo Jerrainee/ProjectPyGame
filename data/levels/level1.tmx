@@ -1,29 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="24" tilewidth="8" tileheight="8" infinite="0" nextlayerid="7" nextobjectid="1">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="24" tilewidth="8" tileheight="8" infinite="0" nextlayerid="8" nextobjectid="1">
  <tileset firstgid="1" source="../images/tiles/tiles1.tsx"/>
  <layer id="2" name="background" width="40" height="24">
   <data encoding="base64" compression="zlib">
-   eJybwcDAMGMUj3i8GorXAPHaQeCewYhxhcvHQeC2UTyKR/EoHigMKhtXDwJ3jOJRjA9/p5M9oLwwVNpR3EDMA8S8UP5QcfcoHsWUYgAIZDn8
+   eJybwcDAMGMUj3i8GopBYO0gcM9gxBqM2MUzBoHb8LlvsGBS3GczyP0yihG4YRC4AR+OGgRuGEzuW0eG+6IJxDOozlhNgZtAejMYsNc9ATgwTL4IiIuBuGSA4g/Z7UDcAKtLYfJdQNwNxD0D5D5CeBEQLwbiJTjkQWWxLRBb06BM/g4ML3r69Tsd0wQt21EfqRhu3EDMA8S8UD66u0HxDksD9IyrUTyKaY0BkOw0FQ==
   </data>
  </layer>
  <layer id="5" name="floor" width="40" height="24">
   <data encoding="base64" compression="zlib">
-   eJxjYBgFo2AUDGXgNtAOGAU0A04D7QAygSvDaLokFiCHEyi+nbGoGarpgNYAFl4uA+0QEsFo/hgFo4B2IGagHTAKhgQAALe+A9E=
+   eJxjYBgFo2AUDGXghkfOlYD8KMAETkDsPNCOGAVUAzED7QAqAKcBtt+FYXiE4ygYBaNg+IPRsmoUEAMALVgC8Q==
   </data>
  </layer>
  <layer id="4" name="ladders" width="40" height="24">
   <data encoding="base64" compression="zlib">
-   eJztzjEBACAIADCsRAxi2D+EDeDEY0uwCAAAmOXZHvTq89/1g3UPuBgBRQ==
+   eJxjYBgFo2AUDHVgxDjQLsAPvAa5+5IGuftGwSgYBaNgsIDR+oYyMNjrm8HuvlEwCqgBAOo0AiY=
   </data>
  </layer>
  <layer id="1" name="walls" width="40" height="24">
   <data encoding="base64" compression="zlib">
-   eJztVltuwjAQ3PxC6SFCyzlQK3GDXji0VbkCgSq5Agn57k6zVhc3D6wE44+MNFJkBXs8s7uEaMKE8JEwt8x35gfz875y/mHPTJkH5pH57fl8+NPlSRwRLZlPzGfmKvKlrAb88e2JC04Utr5ZFLa+tnz76tIXkG/VsB5KXcYtPdmmOxSgLh8HzpJbznbkmw3c18zOHY0/2+ORZnJB9V3x/+OrXlxym0d1LQND6+VawI83xb7cZqLL1zyAvi+qs2/KX/sLb3NZHyNf7N2XGfR1ZaW/eYxnh57f2ND1o59zte8L85W5oT9PtvJO11moN+SOnq1Ea0pu/ulvOvu5bNjL1Fwq72X0OzvW3ONr7XUi+lO6rE1XfYXoOFs0+mx/dE+Ys819oNVkkMu6eVdrctGHvn9gLiyWos/uNa2voMv+7aK+p0v9/QCLrHyi
+   eJztVm1OwzAMdf6WwSEK4xwTSLvB7rkz7EvjCrRF6xXawu/Z1FE9K0mBDpIfPOkpWZa5L352M4ABa+QbpIuU9RXIEvkRW4jCvQF4QM6RL/j5zsRW5Mcr+P3dILfIHXKPPPyVKIEG/P6SdlsDFcSp08z4/c3NZS08RqiDkL8pIORvCgj5mwJyR11R38bo1a/ivyanIfWaJH9PMO3O+M27J7/CO9m+2+l+d909Wv9OzKfgO3lpoffC9R9J3512nAqKuxIc6/OM86/3NawJxHgNkL4j9N67/Jf5Jda8rvOX/aBuKPaYZ6Qv1NvSt47XSsdvXPoKHmX9yHnNsciLJ+QzcglDTra8J6SPfCPfK9ZXMF31p7WVal455p0n1oq/p30n+OzNBfb4QuZ6w/oL3j8zw/PG9Em0rONd0erT+ZE9YZ9tz0NarQc1r9u9nYih9TUBfTemP9utYscxda9JfS1c9m+IM3FO15l9OAMA5JMR
   </data>
  </layer>
  <layer id="6" name="enemies" width="40" height="24">
   <data encoding="base64" compression="zlib">
    eJztwQENAAAAwqD3T20PBxQAAAD8Gw8AAAE=
+  </data>
+ </layer>
+ <layer id="7" name="items" width="40" height="24">
+  <data encoding="base64" compression="zlib">
+   eJztzjENAAAIA7D514JIzikgPK2CJlDzHQAAADiywLgArQ==
   </data>
  </layer>
  <layer id="3" name="player" width="40" height="24">
