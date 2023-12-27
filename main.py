@@ -53,7 +53,7 @@ def load_image(name, color_key=None):
     return image
 
 
-player_image = load_image('data/images/entities/player/mar.png', -1)
+player_image = load_image('data/images/entities/player/hero1.png', -1)
 dash_image = load_image('data/images/items/dash.png', -1)
 
 
@@ -80,10 +80,11 @@ class Player(pygame.sprite.Sprite):
         self.dash_cooldown = True
         self.dash_speed = 0
         self.n_dash = 1
-        self.rect = self.image.get_rect().move(
-            pos_x, pos_y)
         self.width = self.image.get_width()
         self.height = self.image.get_height()
+        self.image = pygame.transform.scale(self.image, (self.width * 1.5, self.height * 1.5))
+        self.rect = self.image.get_rect().move(
+            pos_x, pos_y)
 
     def move(self, moving_left, moving_right, jump, moving_down, dash):
         dx = 0
@@ -109,10 +110,8 @@ class Player(pygame.sprite.Sprite):
             self.dash_cooldown = False
             self.n_dash = 0
         if self.n_dash < 1:
-            self.n_dash += 0.02
-            if not self.in_air:
-                self.n_dash += 0.05
-        else:
+            self.n_dash += 0.025
+        if not self.in_air and self.dash_speed == 0:
             self.dash_cooldown = True
 
         self.fall_y += GRAVITY
