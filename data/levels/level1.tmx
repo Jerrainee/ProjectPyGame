@@ -3,7 +3,7 @@
  <tileset firstgid="1" source="../images/tiles/tiles1.tsx"/>
  <layer id="2" name="background" width="40" height="24">
   <data encoding="base64" compression="zlib">
-   eJybwcDAMGMUj3i8GopBYO0gcM9gxBqM2MUzBoHb8LlvsGBS3GczyP0ymPDqAba/YRCEAT4cNQjcMJjct44M90UTiGdQnUFJOgTpzWDAXvcE4MAw+SIgLgbikgGKP2S3A3EDrC6FyXcBcTcQ95BhLsg8JDZN3L8IiBcD8RIc8qCy2BaIrWlQJn+H+o9e+DsaHznOqJ0maNmO+khkuCG7AZcfuYGYB4h5segBYVC8w9IAPeNqFI9iWmMAB8813Q==
+   eJybwcDAMGMUj3i8GopBYO0gcM9gxBqM2MUzBoHb8LlvsGBS3GczyP0yihG4YRC4AR+OGgRuGEzuW0eG+6IJxDOozlhNgZtAejMYsNc9ATgwTL4IiIuBuGSA4g/Z7UDcAKtLYfJdQNwNxD0D5D5CeBEQLwbiJTjkQWWxLRBb06BM/g4ML3r69Tsd0wQt21EfqRhu3EDMA8S8UD66u0HxDksD9IyrUTyKaY0BkOw0FQ==
   </data>
  </layer>
  <layer id="5" name="floor" width="40" height="24">
@@ -18,12 +18,12 @@
  </layer>
  <layer id="1" name="walls" width="40" height="24">
   <data encoding="base64" compression="zlib">
-   eJzNV1FOwzAM9X7L4BAd4xwVSNxg9+QM20BwBcbQeoWt8I3fiNnDNCmjKZqlp1Rd4jz72U0mcrA7xav0t2IkcqYYK84VK333ksFvLn6lcpooLhVT92wj44nWWixr59Pev2fgd6w9R7jAODbEcTH6X26wrfxOf8QR03euWCiWinvFQx5qeytcjXptzRBHTF9w59roU6c+1vrTd6W+K/VdxdYhjpi+vuavOupgLvFcW735XniUn33k1+XoX5jFY73p8+UN3LpiTun7V/N5N0wcurjBUvqegpUtcaCOcvZqbstZk0PYEDWZ0069JqHvRvqdGUOePeUR3+SUD/sWtp09nv+SnvvYsXmBFm13JH922jjuWVfwOyN09XkR7qx+nt1f8JuNhr78cC5NI/pzfoE67O3zx/cX5pbiB99dmoFfqrdZt0YO+fFrwG9Hc8aBL0auH3+Gwxe0uFbcKG4pJ4swJ8UPukH3ddh7FdBWf5wzziXXpX9uIr5m4XfM28i+Nyvt8YpzPZeve91+Pu/dxY9heX1zMH4+P9wTtrfFA66mQR3e21zWzvPbJvjx/0BGE3z6XmN+O/nevynwnm0xx/h9AKUEu8E=
+   eJzNV11Og0AQnr4ieAgqnqPRxBv0Pj2PT56hrUavIGDaKwD67IzOhOlkd5GymH7JFyi77H7zt0MBejwhPyAukgXAFTJFZuqa8fPMjIcwh74c91wib5CFuhb8vDDjPpTICvkVWd9YvJvfWvsb/r4e8PHcaJA1wAZ9tbFjpN0X3y1yh9wjn5EvETU9Gg2VZx5p98WX3pMcQPui5inZLnYD7+MC1ZovvjbPb0fmgfa/9b22PYRQfKdC7KMcp3OEdIreI/IVfse1D5bGB6H4xtRpz5S/xiMU30tA7rCD8iZmrcbGnDkZA/+Rk1Nw6TlJ8T3AtJ4xZ+/JJ5zJeg05+1y9x+rfw2k/ORdj/NJC31ttPtveKdepoHXXikN1nrD/7bwG+t421OPGgPRRX/L1AO1f6WME67/kjLyhtYdiRvpCta3j1vGzyvGOS598w+j80fdHXoticYe8Rz5A75Mdzwnpo7hR3GvWVzJd+We1Vea+dtx3nrXWPE7zDvBTmyus8ZX29Zb1lzw/XfT7DenTaFnHp6Hos/7RNSF7iz2kVX8z1Wpup9aw+pqAPv3fTrPjNW2taX0tnNZviKmy02WzD987Cqvi
   </data>
  </layer>
- <layer id="9" name="traps" width="40" height="24">
+ <layer id="8" name="traps" width="40" height="24">
   <data encoding="base64" compression="zlib">
-   eJztzjENADAMBLEPs/KnUSJVSDRDbOn2S2CXWznd9AcAAPDXA4XjAkk=
+   eJztzjENADAMBLEPs/KnUSJVQFQZYku3XwK73crppj8AAIC/HmFjAkk=
   </data>
  </layer>
  <layer id="6" name="enemies" width="40" height="24">
@@ -31,9 +31,9 @@
    eJztwQENAAAAwqD3T20PBxQAAAD8Gw8AAAE=
   </data>
  </layer>
- <layer id="8" name="next_lvl" width="40" height="24">
+ <layer id="9" name="exit" width="40" height="24">
   <data encoding="base64" compression="zlib">
-   eJztzjENAAAIA7D514JIFOwj4WkVNAEA4Mp8BwCoFtldAK0=
+   eJztzjENAAAIA7D514JIHOwi4WkVNAEA4MJ8BwCoFtwNAK0=
   </data>
  </layer>
  <layer id="7" name="items" width="40" height="24">

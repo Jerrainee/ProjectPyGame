@@ -53,7 +53,7 @@ def load_image(name, color_key=None):
     return image
 
 
-player_image = load_image('data/images/entities/player/hero1.png', -1)
+player_image = load_image('data/images/entities/player/hero.png', -1)
 dash_image = load_image('data/images/items/dash.png', -1)
 
 
@@ -82,7 +82,7 @@ class Player(pygame.sprite.Sprite):
         self.n_dash = 1
         self.width = self.image.get_width()
         self.height = self.image.get_height()
-        self.image = pygame.transform.scale(self.image, (self.width * 1.5, self.height * 1.5))
+        self.image = pygame.transform.scale(self.image, (self.width * 1.42, self.height * 1.42))
         self.rect = self.image.get_rect().move(
             pos_x, pos_y)
 
