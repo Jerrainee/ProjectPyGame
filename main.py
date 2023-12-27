@@ -306,43 +306,52 @@ player, item = generate_level(file_name)
 if __name__ == '__main__':
     running = True
     camera = Camera()
+    pause = False
     while running:
         screen.fill(pygame.Color("black"))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_a:
-                    moving_left = True
-                if event.key == pygame.K_d:
-                    moving_right = True
-                if event.key == pygame.K_SPACE or event.key == pygame.K_w:
-                    jump = True
-                if event.key == pygame.K_s:
-                    moving_down = True
-                if event.key == pygame.K_q and dash_unlock:
-                    dash = True
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                print('asdsd')
+                if pause:
+                    pause = False
+                else:
+                    pause = True
+            if not pause:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_a:
+                        moving_left = True
+                    if event.key == pygame.K_d:
+                        moving_right = True
+                    if event.key == pygame.K_SPACE or event.key == pygame.K_w:
+                        jump = True
+                    if event.key == pygame.K_s:
+                        moving_down = True
+                    if event.key == pygame.K_q and dash_unlock:
+                        dash = True
 
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_a:
-                    moving_left = False
-                if event.key == pygame.K_d:
-                    moving_right = False
-                if event.key == pygame.K_SPACE or event.key == pygame.K_w:
-                    jump = False
-                if event.key == pygame.K_s:
-                    moving_down = False
-                if event.key == pygame.K_q and dash_unlock:
-                    dash = False
-        player.move(moving_left, moving_right, jump, moving_down, dash)
-        camera.update(player)
-        item.update()
-        for sprite in all_sprites:
-            camera.apply(sprite)
-        tiles_group.draw(screen)
-        player_group.draw(screen)
-        item_group.draw(screen)
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_a:
+                        moving_left = False
+                    if event.key == pygame.K_d:
+                        moving_right = False
+                    if event.key == pygame.K_SPACE or event.key == pygame.K_w:
+                        jump = False
+                    if event.key == pygame.K_s:
+                        moving_down = False
+                    if event.key == pygame.K_q and dash_unlock:
+                        dash = False
+        if not pause:
+            player.move(moving_left, moving_right, jump, moving_down, dash)
+            camera.update(player)
+            item.update()
+            for sprite in all_sprites:
+                camera.apply(sprite)
+            tiles_group.draw(screen)
+            player_group.draw(screen)
+            item_group.draw(screen)
 
-        pygame.display.update()
+            pygame.display.update()
         clock.tick(FPS)
 terminate()
