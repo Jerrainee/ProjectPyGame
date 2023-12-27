@@ -4,12 +4,13 @@ import sys
 import pygame
 import pytmx
 
-file_name = 'data/levels/level1.tmx'
+file_name1 = 'data/levels/level1.tmx'
+file_name3 = 'data/levels/level3.tmx'
 
-LEVEL_COUNT = 0
 FPS = 60
 STEP = 5
 GRAVITY = 0.5
+SCALE = 5
 moving_left = False
 moving_right = False
 moving_down = False
@@ -72,9 +73,10 @@ def terminate():
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos_x, pos_y):
+    def __init__(self, pos_x, pos_y, scale):
         super().__init__(player_group, all_sprites)
         self.image = player_image
+        self.scale = scale
         self.fall_y = 0
         self.in_air = False
         self.sight = 0
@@ -88,7 +90,7 @@ class Player(pygame.sprite.Sprite):
         self.check = True
         self.width = self.image.get_width()
         self.height = self.image.get_height()
-        self.image = pygame.transform.scale(self.image, (self.width * 1.5, self.height * 1.5))
+        self.image = pygame.transform.scale(self.image, (self.width * self.scale, self.height * self.scale))
         self.rect = self.image.get_rect().move(
             pos_x, pos_y)
 
@@ -98,7 +100,7 @@ class Player(pygame.sprite.Sprite):
             n = len(os.listdir(f'data/images/entities/player/{animation}'))
             for i in range(n):
                 img = pygame.image.load(f'data/images/entities/player/{animation}/{i}.png').convert_alpha()
-                img = pygame.transform.scale(img, (int(img.get_width() * 1.5), int(img.get_height() * 1.5)))
+                img = pygame.transform.scale(img, (int(img.get_width() * self.scale), int(img.get_height() * self.scale)))
                 cur_animations_lst.append(img)
             self.animation_list.append(cur_animations_lst)
         print(self.animation_list)
@@ -133,9 +135,9 @@ class Player(pygame.sprite.Sprite):
         if dash and self.dash_cooldown and self.n_dash >= 1:
             self.cur_animation = 5
             if self.sight:
-                self.dash_speed = -8
+                self.dash_speed = -7
             else:
-                self.dash_speed = 8
+                self.dash_speed = 7
             self.dash_cooldown = False
             self.n_dash = 0
         if self.n_dash < 1:
@@ -200,6 +202,13 @@ class Player(pygame.sprite.Sprite):
             self.rect.x -= dx * 5
             self.rect.y -= dy * 5
 
+        if pygame.sprite.spritecollideany(self, exit_group):
+            for i in all_sprites:
+                i.kill()
+            LEVEL_COUNT = 2
+            global player, item
+            player, item = generate_level(file_name3, LEVEL_COUNT)
+
         self.update()
 
     def update(self):
@@ -260,8 +269,12 @@ class Camera:
         self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
 
 
-def generate_level(filename):
+def generate_level(filename, LEVEL_COUNT):
     try:
+        if LEVEL_COUNT == 0:
+            SCALE, n, scale_player = 5, 1, 1.4
+        elif LEVEL_COUNT == 2:
+            SCALE, n, scale_player = 3, 2, 1.5
         map = pytmx.load_pygame(filename)
         tile_size = map.tilewidth
         new_player = None
@@ -271,14 +284,15 @@ def generate_level(filename):
                 for x in range(map.width):
                     image = map.get_tile_image(x, y, layer)
                     if image:
-                        temp = Tile(pygame.transform.scale(image, (tile_size * 5, tile_size * 5)), x * tile_size * 5,
-                                    y * tile_size * 5, 8, 8)
+                        temp = Tile(pygame.transform.scale(image, (tile_size * SCALE, tile_size * SCALE)), x * tile_size * SCALE,
+                                    y * tile_size * SCALE, int(8 * n), int(8 * n))
                         if layer == 8:
-                            new_player = Player((x * 8 * 5), (y * 8 * 5) - 75)
+                            new_player = Player((x * 8 * n * SCALE), (y * 8 * n * SCALE) - 125, scale_player)
+                            print(scale_player)
                         if layer == 7:
                             if LEVEL_COUNT == 0:
                                 new_item = Items(0, dash_image, (x * 8 * 5), (y * 8 * 5) - 50)
-                            temp.add(item_group)
+                                temp.add(item_group)
                         if layer == 6:
                             temp.add(exit_group)
                         if layer == 5:
@@ -301,7 +315,7 @@ def generate_level(filename):
         print(f)
 
 
-player, item = generate_level(file_name)
+player, item = generate_level(file_name1, 0)
 
 if __name__ == '__main__':
     running = True
