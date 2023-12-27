@@ -199,8 +199,8 @@ class Player(pygame.sprite.Sprite):
             self.in_air = True
         if pygame.sprite.spritecollideany(self, trap_group):
             screen.fill(pygame.Color("red"))
-            self.rect.x -= dx * 5
-            self.rect.y -= dy * 5
+            self.rect.x -= dx * 2
+            self.rect.y -= dy * 2
 
         if pygame.sprite.spritecollideany(self, exit_group):
             for i in all_sprites:
@@ -292,7 +292,7 @@ def generate_level(filename, LEVEL_COUNT):
                         if layer == 7:
                             if LEVEL_COUNT == 0:
                                 new_item = Items(0, dash_image, (x * 8 * 5), (y * 8 * 5) - 50)
-                                temp.add(item_group)
+                          #      temp.add(item_group)
                         if layer == 6:
                             temp.add(exit_group)
                         if layer == 5:
