@@ -129,7 +129,7 @@ class Player(pygame.sprite.Sprite):
             self.cur_animation = 0
             self.check = False
 
-        #dash
+        # dash
         if dash and self.dash_cooldown and self.n_dash >= 1:
             self.cur_animation = 5
             if self.sight:
@@ -184,7 +184,6 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.cur_animation = 4
 
-
         if pygame.sprite.spritecollideany(self, wall_group):
             self.check = True
             if self.fall_y < 0:
@@ -222,7 +221,6 @@ class Player(pygame.sprite.Sprite):
             self.cur_animation = 0
 
 
-
 class Items(pygame.sprite.Sprite):
     def __init__(self, n, item_type, pos_x, pos_y):
         super().__init__(item_group, all_sprites)
@@ -233,9 +231,9 @@ class Items(pygame.sprite.Sprite):
             pos_x, pos_y)
         self.width = self.image.get_width()
         self.height = self.image.get_height()
-        pygame.transform.scale(self.image, (self.width // 2,  self.height // 2))
-      #  screen.blit(pygame.transform.flip(self.image, False, False), self.rect)
+        pygame.transform.scale(self.image, (self.width // 2, self.height // 2))
 
+    #  screen.blit(pygame.transform.flip(self.image, False, False), self.rect)
 
     def update(self):
         if pygame.sprite.spritecollideany(self, player_group):
@@ -243,7 +241,6 @@ class Items(pygame.sprite.Sprite):
                 global dash_unlock
                 dash_unlock = True
                 self.kill()
-
 
 
 class Camera:
@@ -261,6 +258,7 @@ class Camera:
     def update(self, target):
         self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
         self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+
 
 def generate_level(filename):
     try:
@@ -303,7 +301,6 @@ def generate_level(filename):
         print(f)
 
 
-
 player, item = generate_level(file_name)
 
 if __name__ == '__main__':
@@ -325,7 +322,6 @@ if __name__ == '__main__':
                     moving_down = True
                 if event.key == pygame.K_q and dash_unlock:
                     dash = True
-
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_a:
