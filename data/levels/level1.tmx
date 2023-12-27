@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="24" tilewidth="8" tileheight="8" infinite="0" nextlayerid="10" nextobjectid="1">
  <tileset firstgid="1" source="../images/tiles/tiles1.tsx"/>
- <layer id="2" name="background" width="40" height="24" visible="0">
+ <layer id="2" name="background" width="40" height="24">
   <data encoding="base64" compression="zlib">
    eJybwcDAMGMUE41P0tk+a0YGBhsotoXgBiC7AUaDsDUEg9UQY+Z3LGKroRgE1g6CcB6MWANH+GZQyfzVFIY9LvdRAwdCMYy/FuHeBlq4j9i0DMLA9NwAcx+pmF5pB5Q/QRifW6yR8jm93IUN25JYrjQMoFuJwVGDwA2DyX3ryHBfNIF4hpUH5LoJpDeDAXv5F4ADw+SLgLgYiEsGKP6Q3Q4qD2F1KUy+C4i7gbhngNxHCC8C4sVAvASHPKxMsiazXLLBo/c7CfUHNTC2tg+t0gQt21EfqRhu3EDMA8S8UD66uwdLvTSKRzG1MQBCZSv8
   </data>
