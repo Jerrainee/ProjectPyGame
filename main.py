@@ -1,3 +1,4 @@
+import os
 import sys
 
 import pygame
@@ -80,11 +81,27 @@ class Player(pygame.sprite.Sprite):
         self.dash_cooldown = True
         self.dash_speed = 0
         self.n_dash = 1
+        self.cur_animation = 0
+        self.cur_frame = 0
+        self.animation_list = []
+        self.animation_cooldown = 0
+        self.check = True
         self.width = self.image.get_width()
         self.height = self.image.get_height()
-        self.image = pygame.transform.scale(self.image, (self.width * 1.42, self.height * 1.42))
+        self.image = pygame.transform.scale(self.image, (self.width * 1.5, self.height * 1.5))
         self.rect = self.image.get_rect().move(
             pos_x, pos_y)
+
+        animation_types = ['idle', 'run', 'jump', 'in_air', 'climb', 'dash']
+        for animation in animation_types:
+            cur_animations_lst = []
+            n = len(os.listdir(f'data/images/entities/player/{animation}'))
+            for i in range(n):
+                img = pygame.image.load(f'data/images/entities/player/{animation}/{i}.png').convert_alpha()
+                img = pygame.transform.scale(img, (int(img.get_width() * 1.5), int(img.get_height() * 1.5)))
+                cur_animations_lst.append(img)
+            self.animation_list.append(cur_animations_lst)
+        print(self.animation_list)
 
     def move(self, moving_left, moving_right, jump, moving_down, dash):
         dx = 0
@@ -92,21 +109,33 @@ class Player(pygame.sprite.Sprite):
 
         if moving_left:
             dx = -STEP
-            self.sight = 0
+            self.sight = 1
+            if not self.dash_speed:
+                self.cur_animation = 1
+                self.check = True
         if moving_right:
             dx = STEP
-            self.sight = 1
-        if jump and self.in_air == False:
-            print('jump')
+            self.sight = 0
+            if not self.dash_speed:
+                self.cur_animation = 1
+                self.check = True
+        if jump and not self.in_air:
+            self.cur_animation = 2
             self.fall_y = -10.5
             self.in_air = True
+            self.check = True
+
+        if not moving_left and not moving_right and not jump and not self.dash_speed and self.check:
+            self.cur_animation = 0
+            self.check = False
 
         #dash
         if dash and self.dash_cooldown and self.n_dash >= 1:
+            self.cur_animation = 5
             if self.sight:
-                self.dash_speed = 8
-            else:
                 self.dash_speed = -8
+            else:
+                self.dash_speed = 8
             self.dash_cooldown = False
             self.n_dash = 0
         if self.n_dash < 1:
@@ -114,32 +143,50 @@ class Player(pygame.sprite.Sprite):
         if not self.in_air and self.dash_speed == 0:
             self.dash_cooldown = True
 
+        elif self.in_air and self.check and self.n_dash >= 0.5:
+
+            self.cur_animation = 3
+            self.check = False
+
         self.fall_y += GRAVITY
         if self.fall_y > 11:
             self.fall_y = 11
 
-        self.rect.x += dx
         if self.dash_speed:
             self.fall_y = 0.1
             self.rect.x += STEP * self.dash_speed
             if pygame.sprite.spritecollideany(self, wall_group):
                 self.rect.x -= STEP * self.dash_speed
-            if self.sight == 0:
+            if self.sight:
                 self.dash_speed += 1
             else:
                 self.dash_speed -= 1
+
         dy += self.fall_y
+
+        self.rect.x += dx
 
         if pygame.sprite.spritecollideany(self, wall_group):
             self.rect.x -= dx
         #    self.fall_y = 1
+
         self.rect.y += dy
-        if pygame.sprite.spritecollideany(self, ladder_group) and not moving_down:
-            self.rect.y -= dy
-            self.in_air = False
-            if jump:
-                self.rect.y -= STEP * 0.8
+
+        if pygame.sprite.spritecollideany(self, ladder_group):
+            if not moving_down:
+                self.rect.y -= dy
+                self.in_air = False
+                if jump:
+                    self.rect.y -= STEP * 0.8
+                    self.cur_animation = 4
+                else:
+                    self.cur_animation = 0
+            else:
+                self.cur_animation = 4
+
+
         if pygame.sprite.spritecollideany(self, wall_group):
+            self.check = True
             if self.fall_y < 0:
                 self.rect.y -= (dy - 0.1)
                 self.fall_y = 0
@@ -153,6 +200,27 @@ class Player(pygame.sprite.Sprite):
             screen.fill(pygame.Color("red"))
             self.rect.x -= dx * 5
             self.rect.y -= dy * 5
+
+        self.update()
+
+    def update(self):
+        try:
+            if self.animation_cooldown >= 1:
+                self.image = self.animation_list[self.cur_animation][self.cur_frame]
+                if self.sight:
+                    self.image = pygame.transform.flip(self.image, 1, 0)
+                self.cur_frame += 1
+                if self.cur_frame >= len(self.animation_list[self.cur_animation]):
+                    self.cur_frame = 0
+                self.animation_cooldown = 0
+            else:
+                self.animation_cooldown += 0.12
+        except Exception:
+            self.cur_frame = 0
+
+        if self.cur_animation == 5 and self.dash_speed == 0:
+            self.cur_animation = 0
+
 
 
 class Items(pygame.sprite.Sprite):
