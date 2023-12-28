@@ -60,10 +60,14 @@ dash_image = load_image('data/images/items/key/0.png', -1)
 
 
 class Tile(pygame.sprite.Sprite):
-    def __init__(self, image, pos_x, pos_y, tile_width, tile_height):
+    def __init__(self, image, pos_x, pos_y, tile_width, tile_height, layer=None):
         super().__init__(tiles_group, all_sprites)
         self.image = image
-        self.rect = self.image.get_rect().move(pos_x, pos_y)
+        if layer:
+            if layer == 1:
+                self.rect = pygame.Rect(pos_x, pos_y, tile_width, tile_height // 5)
+        else:
+            self.rect = self.image.get_rect().move(pos_x, pos_y)
         # print(pos_x, pos_y)
 
 
@@ -122,7 +126,7 @@ class Player(pygame.sprite.Sprite):
                 self.cur_animation = 1
                 self.check = True
         if jump and not self.in_air:
-            self.cur_animation = 2
+        #    self.cur_animation = 2
             self.fall_y = -10.5
             self.in_air = True
             self.check = True
@@ -245,7 +249,7 @@ class Item(pygame.sprite.Sprite):
             cur_animations_lst = []
             n = len(os.listdir(f'data/images/items/{animation}'))
             for i in range(n):
-                img = pygame.image.load(f'data/images/items/{animation}/{i}.png').convert_alpha()
+                img = load_image((f'data/images/items/{animation}/{i}.png'), -1)
                 img = pygame.transform.scale(img,
                                              (int(img.get_width() * self.scale), int(img.get_height() * self.scale)))
                 cur_animations_lst.append(img)
@@ -320,8 +324,14 @@ def generate_level(filename, LEVEL_COUNT):
                 for x in range(map.width):
                     image = map.get_tile_image(x, y, layer)
                     if image:
-                        temp = Tile(pygame.transform.scale(image, (tile_size * SCALE, tile_size * SCALE)), x * tile_size * SCALE,
-                                    y * tile_size * SCALE, int(8 * n), int(8 * n))
+                        if layer == 1:
+                            temp = Tile(pygame.transform.scale(image, (tile_size * SCALE, tile_size * SCALE)),
+                                        x * tile_size * SCALE,
+                                        y * tile_size * SCALE, int(8 * n * SCALE), int(8 * n * SCALE), 1)
+                        else:
+                            temp = Tile(pygame.transform.scale(image, (tile_size * SCALE, tile_size * SCALE)),
+                                        x * tile_size * SCALE,
+                                        y * tile_size * SCALE, int(8 * n), int(8 * n))
                         if layer == 9:
                             new_player = Player((x * 8 * n * SCALE), (y * 8 * n * SCALE) - 125, scale_player)
                         if layer == 8:
