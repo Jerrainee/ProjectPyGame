@@ -319,7 +319,7 @@ def generate_level(filename, LEVEL_COUNT):
         tile_size = map.tilewidth
         new_player = None
         new_items = []
-        for layer in range(10):
+        for layer in range(13):
             for y in range(map.height):
                 for x in range(map.width):
                     image = map.get_tile_image(x, y, layer)
@@ -332,7 +332,7 @@ def generate_level(filename, LEVEL_COUNT):
                             temp = Tile(pygame.transform.scale(image, (tile_size * SCALE, tile_size * SCALE)),
                                         x * tile_size * SCALE,
                                         y * tile_size * SCALE, int(8 * n), int(8 * n))
-                        if layer == 9:
+                        if layer == 12:
                             new_player = Player((x * 8 * n * SCALE), (y * 8 * n * SCALE) - 125, scale_player)
                         if layer == 8:
                             new_items.append(Item(1, (x * 8 * 5), (y * 8 * 5) - 50, scale_item))
@@ -343,8 +343,7 @@ def generate_level(filename, LEVEL_COUNT):
                         if layer == 6:
                             temp.add(exit_group)
                         if layer == 5:
-                            if LEVEL_COUNT != 0:
-                                temp.add(mob_group)
+                            temp.add(mob_group)
                         if layer == 4:
                             temp.add(trap_group)
                         if layer == 3:
