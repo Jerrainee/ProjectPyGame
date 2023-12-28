@@ -126,7 +126,7 @@ class Player(pygame.sprite.Sprite):
                 self.cur_animation = 1
                 self.check = True
         if jump and not self.in_air:
-        #    self.cur_animation = 2
+            self.cur_animation = 2
             self.fall_y = -10.5
             self.in_air = True
             self.check = True
