@@ -17,7 +17,7 @@ moving_down = False
 jump = False
 dash = False
 dash_unlock = False
-dash_cooldown = False
+double_jump_unlock = False
 pygame.init()
 
 size = WIDTH, HEIGHT = 1280, 720
@@ -56,7 +56,7 @@ def load_image(name, color_key=None):
 
 
 player_image = load_image('data/images/entities/player/hero.png', -1)
-dash_image = load_image('data/images/items/dash.png', -1)
+dash_image = load_image('data/images/items/key/0.png', -1)
 
 
 class Tile(pygame.sprite.Sprite):
@@ -103,7 +103,7 @@ class Player(pygame.sprite.Sprite):
                 img = pygame.transform.scale(img, (int(img.get_width() * self.scale), int(img.get_height() * self.scale)))
                 cur_animations_lst.append(img)
             self.animation_list.append(cur_animations_lst)
-        print(self.animation_list)
+     #   print(self.animation_list)
 
     def move(self, moving_left, moving_right, jump, moving_down, dash):
         dx = 0
@@ -230,12 +230,30 @@ class Player(pygame.sprite.Sprite):
             self.cur_animation = 0
 
 
-class Items(pygame.sprite.Sprite):
-    def __init__(self, n, item_type, pos_x, pos_y):
+class Item(pygame.sprite.Sprite):
+    def __init__(self, item_type, pos_x, pos_y, scale):
         super().__init__(item_group, all_sprites)
-        self.image = item_type
-        self.n = n
-        self.item_lst = ['dash', 'walk_jump, double_jump']
+        self.item_type = item_type
+        self.scale = scale
+        self.item_lst = ['treasure', 'key', 'dash', 'double_jump']
+        self.animation_list_items = []
+        self.cur_frame = 0
+        self.animation_cooldown = 0
+
+
+        for animation in self.item_lst:
+            cur_animations_lst = []
+            n = len(os.listdir(f'data/images/items/{animation}'))
+            for i in range(n):
+                img = pygame.image.load(f'data/images/items/{animation}/{i}.png').convert_alpha()
+                img = pygame.transform.scale(img,
+                                             (int(img.get_width() * self.scale), int(img.get_height() * self.scale)))
+                cur_animations_lst.append(img)
+            self.animation_list_items.append(cur_animations_lst)
+        print(self.animation_list_items)
+
+        self.image = self.animation_list_items[self.item_type][self.cur_frame]
+        self.rect = self.image.get_rect()
         self.rect = self.image.get_rect().move(
             pos_x, pos_y)
         self.width = self.image.get_width()
@@ -245,11 +263,29 @@ class Items(pygame.sprite.Sprite):
     #  screen.blit(pygame.transform.flip(self.image, False, False), self.rect)
 
     def update(self):
+        global dash_unlock, double_jump_unlock
         if pygame.sprite.spritecollideany(self, player_group):
-            if self.item_lst[self.n] == 'dash':
-                global dash_unlock
+            if self.item_lst[self.item_type] == 'dash':
                 dash_unlock = True
                 self.kill()
+            if self.item_lst[self.item_type] == 'double_jump':
+                double_jump_unlock = True
+                self.kill()
+            if self.item_lst[self.item_type] == 'key':
+                self.kill()
+
+
+        try:
+            if self.animation_cooldown >= 1:
+                self.image = self.animation_list_items[self.item_type][self.cur_frame]
+                self.cur_frame += 1
+                if self.cur_frame >= len(self.animation_list_items[self.item_type]):
+                    self.cur_frame = 0
+                self.animation_cooldown = 0
+            else:
+                self.animation_cooldown += 0.12
+        except Exception:
+            self.cur_frame = 0
 
 
 class Camera:
@@ -272,26 +308,27 @@ class Camera:
 def generate_level(filename, LEVEL_COUNT):
     try:
         if LEVEL_COUNT == 0:
-            SCALE, n, scale_player = 5, 1, 1.4
+            SCALE, n, scale_player, scale_item = 5, 1, 1.4, 1
         elif LEVEL_COUNT == 2:
-            SCALE, n, scale_player = 3, 2, 1.5
+            SCALE, n, scale_player, scale_item = 3, 2, 1.5, 1
         map = pytmx.load_pygame(filename)
         tile_size = map.tilewidth
         new_player = None
-        new_item = None
-        for layer in range(9):
+        new_items = []
+        for layer in range(10):
             for y in range(map.height):
                 for x in range(map.width):
                     image = map.get_tile_image(x, y, layer)
                     if image:
                         temp = Tile(pygame.transform.scale(image, (tile_size * SCALE, tile_size * SCALE)), x * tile_size * SCALE,
                                     y * tile_size * SCALE, int(8 * n), int(8 * n))
-                        if layer == 8:
+                        if layer == 9:
                             new_player = Player((x * 8 * n * SCALE), (y * 8 * n * SCALE) - 125, scale_player)
-                            print(scale_player)
+                        if layer == 8:
+                            new_items.append(Item(1, (x * 8 * 5), (y * 8 * 5) - 50, scale_item))
                         if layer == 7:
                             if LEVEL_COUNT == 0:
-                                new_item = Items(0, dash_image, (x * 8 * 5), (y * 8 * 5) - 50)
+                                new_items.append(Item(2, (x * 8 * 5), (y * 8 * 5) - 50, scale_item))
                           #      temp.add(item_group)
                         if layer == 6:
                             temp.add(exit_group)
@@ -310,12 +347,12 @@ def generate_level(filename, LEVEL_COUNT):
                             temp.add(background_group)
                         temp.add(all_sprites)
         print(1)
-        return new_player, new_item
+        return new_player, new_items
     except Exception as f:
         print(f)
 
 
-player, item = generate_level(file_name1, 0)
+player, items = generate_level(file_name1, 0)
 
 if __name__ == '__main__':
     running = True
@@ -373,7 +410,8 @@ if __name__ == '__main__':
                     dash = False
         player.move(moving_left, moving_right, jump, moving_down, dash)
         camera.update(player)
-        item.update()
+        for i in items:
+            i.update()
         for sprite in all_sprites:
             camera.apply(sprite)
         tiles_group.draw(screen)
