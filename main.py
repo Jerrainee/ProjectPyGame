@@ -8,9 +8,8 @@ file_name1 = 'data/levels/level1.tmx'
 file_name3 = 'data/levels/level3.tmx'
 
 FPS = 60
-STEP = 5
+STEP = 6
 GRAVITY = 0.5
-SCALE = 5
 moving_left = False
 moving_right = False
 moving_down = False
@@ -66,7 +65,7 @@ class Tile(pygame.sprite.Sprite):
         if layer == 1:
             self.rect = pygame.Rect(pos_x, pos_y, tile_width, tile_height // 5)
         else:
-            self.rect = self.image.get_rect().move(pos_x, pos_y)
+            self.rect = pygame.Rect(pos_x, pos_y, tile_width, tile_height - 3)
         # print(pos_x, pos_y)
 
 
@@ -126,7 +125,7 @@ class Player(pygame.sprite.Sprite):
                 self.check = True
         if jump and not self.in_air:
             self.cur_animation = 2
-            self.fall_y = -10
+            self.fall_y = -11
             self.in_air = True
             self.check = True
 
@@ -193,7 +192,7 @@ class Player(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, wall_group):
             self.check = True
             if self.fall_y < 0:
-                self.rect.y -= (dy - 0.1)
+                self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
             if self.fall_y > 0:
                 self.rect.y -= (dy + 0.1)
@@ -315,7 +314,7 @@ class Camera:
 def generate_level(filename, LEVEL_COUNT):
     try:
         if LEVEL_COUNT == 0:
-            SCALE, n, scale_player, scale_item = 5, 1, 1.4, 1
+            SCALE, n, scale_player, scale_item = 6, 1, 1.7, 1
         elif LEVEL_COUNT == 2:
             SCALE, n, scale_player, scale_item = 3, 2, 1.5, 1
         map = pytmx.load_pygame(filename)
@@ -329,14 +328,14 @@ def generate_level(filename, LEVEL_COUNT):
                     if image:
                         temp = Tile(pygame.transform.scale(image, (tile_size * SCALE, tile_size * SCALE)),
                                     x * tile_size * SCALE,
-                                    y * tile_size * SCALE, int(8 * n * SCALE), int(8 * n * SCALE), 1)
+                                    y * tile_size * SCALE, int(8 * n * SCALE), int(8 * n * SCALE), layer)
                         if layer == 12:
                             new_player = Player((x * 8 * n * SCALE), (y * 8 * n * SCALE), scale_player)
                         if layer == 8:
-                            new_items.append(Item(1, (x * 8 * 5), (y * 8 * 5) - 50, scale_item))
+                            new_items.append(Item(1, (x * 8 * SCALE), (y * 8 * SCALE) - 50, scale_item))
                         if layer == 7:
                             if LEVEL_COUNT == 0:
-                                new_items.append(Item(2, (x * 8 * 5), (y * 8 * 5) - 50, scale_item))
+                                new_items.append(Item(2, (x * 8 * SCALE), (y * 8 * SCALE) - 50, scale_item))
                           #      temp.add(item_group)
                         if layer == 6:
                             temp.add(exit_group)
