@@ -20,6 +20,7 @@ double_jump_unlock = False
 pygame.init()
 
 size = WIDTH, HEIGHT = 1280, 720
+map = None
 
 screen = pygame.display.set_mode(size)
 clock = pygame.time.Clock()
@@ -36,6 +37,9 @@ ladder_group = pygame.sprite.Group()
 item_group = pygame.sprite.Group()
 exit_group = pygame.sprite.Group()
 trap_group = pygame.sprite.Group()
+border_group = pygame.sprite.Group()
+horizontal_borders = pygame.sprite.Group()
+vertical_borders = pygame.sprite.Group()
 
 
 def load_image(name, color_key=None):
@@ -66,7 +70,19 @@ class Tile(pygame.sprite.Sprite):
             self.rect = pygame.Rect(pos_x, pos_y, tile_width, tile_height // 5)
         else:
             self.rect = pygame.Rect(pos_x, pos_y, tile_width, tile_height - 3)
-        # print(pos_x, pos_y)
+
+
+class Border(pygame.sprite.Sprite):
+    def __init__(self, x1, y1, x2, y2):
+        super().__init__(border_group, all_sprites)
+        if x1 == x2:
+            self.add(vertical_borders)
+            self.image = pygame.Surface([1, y2 - y1])
+            self.rect = pygame.Rect(x1, y1, 1, y2 - y1)
+        else:
+            self.add(horizontal_borders)
+            self.image = pygame.Surface([x2 - x1, 1])
+            self.rect = pygame.Rect(x1, y1, x2 - x1, 1)
 
 
 def terminate():
@@ -102,10 +118,12 @@ class Player(pygame.sprite.Sprite):
             n = len(os.listdir(f'data/images/entities/player/{animation}'))
             for i in range(n):
                 img = pygame.image.load(f'data/images/entities/player/{animation}/{i}.png').convert_alpha()
-                img = pygame.transform.scale(img, (int(img.get_width() * self.scale), int(img.get_height() * self.scale)))
+                img = pygame.transform.scale(img,
+                                             (int(img.get_width() * self.scale), int(img.get_height() * self.scale)))
                 cur_animations_lst.append(img)
             self.animation_list.append(cur_animations_lst)
-     #   print(self.animation_list)
+
+    #   print(self.animation_list)
 
     def move(self, moving_left, moving_right, jump, moving_down, dash):
         dx = 0
@@ -176,6 +194,12 @@ class Player(pygame.sprite.Sprite):
 
         self.rect.y += dy
 
+        if pygame.sprite.spritecollideany(self, vertical_borders):
+            self.rect.x -= dx
+
+        if pygame.sprite.spritecollideany(self, horizontal_borders):
+            pass  # смэрть
+
         if pygame.sprite.spritecollideany(self, ladder_group):
             self.in_air = False
             self.check = True
@@ -215,6 +239,7 @@ class Player(pygame.sprite.Sprite):
         self.update()
 
     def update(self):
+        # global temp
         try:
             if self.animation_cooldown >= 1:
                 self.image = self.animation_list[self.cur_animation][self.cur_frame]
@@ -223,6 +248,7 @@ class Player(pygame.sprite.Sprite):
                 self.cur_frame += 1
                 if self.cur_frame >= len(self.animation_list[self.cur_animation]):
                     self.cur_frame = 0
+                #    temp.add(all_sprites)
                 self.animation_cooldown = 0
             else:
                 self.animation_cooldown += 0.12
@@ -245,7 +271,6 @@ class Item(pygame.sprite.Sprite):
         self.animation_list_items = []
         self.cur_frame = 0
         self.animation_cooldown = 0
-
 
         for animation in self.item_lst:
             cur_animations_lst = []
@@ -280,7 +305,6 @@ class Item(pygame.sprite.Sprite):
             if self.item_lst[self.item_type] == 'key':
                 self.kill()
 
-
         try:
             if self.animation_cooldown >= 1:
                 self.image = self.animation_list_items[self.item_type][self.cur_frame]
@@ -297,21 +321,32 @@ class Item(pygame.sprite.Sprite):
 class Camera:
     # зададим начальный сдвиг камеры
     def __init__(self):
-        self.dx = 0
-        self.dy = 0
+        self.camera = pygame.Rect(0, 0, WIDTH, HEIGHT)
 
     # сдвинуть объект obj на смещение камеры
     def apply(self, obj):
-        obj.rect.x += self.dx
-        obj.rect.y += self.dy
+        return obj.rect.move(self.camera.topleft)
 
     # позиционировать камеру на объекте target
     def update(self, target):
-        self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
-        self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+        x = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
+        y = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+        x = min(0, x)  # Левая сторона
+        y = min(0, y)  # Верхняя сторона
+        print(y)
+        if level_count == 0:
+            SCALE = 6
+        elif level_count == 2:
+            SCALE = 3
+        x = max(-(map.width * map.tilewidth * SCALE - WIDTH), x)  # Правая сторона
+        y = max(-(map.height * map.tilewidth * SCALE - HEIGHT), y)  # Нижняя сторона
+        print(y, -(map.height * map.tilewidth * SCALE - HEIGHT))
+
+        self.camera = pygame.Rect(x, y, WIDTH, HEIGHT)
 
 
 def generate_level(filename, LEVEL_COUNT):
+    global map
     try:
         if LEVEL_COUNT == 0:
             SCALE, n, scale_player, scale_item = 6, 1, 1.7, 1
@@ -319,6 +354,9 @@ def generate_level(filename, LEVEL_COUNT):
             SCALE, n, scale_player, scale_item = 3, 2, 1.5, 1
         map = pytmx.load_pygame(filename)
         tile_size = map.tilewidth
+        Border(0, map.height * tile_size * SCALE, map.width * tile_size * SCALE, map.height * tile_size * SCALE)
+        Border(0, 0, 0, map.height * tile_size * SCALE)
+        Border(map.width * tile_size * SCALE, 0, map.width * tile_size * SCALE, map.height * tile_size * SCALE)
         new_player = None
         new_items = []
         for layer in range(13):
@@ -336,13 +374,13 @@ def generate_level(filename, LEVEL_COUNT):
                         if layer == 7:
                             if LEVEL_COUNT == 0:
                                 new_items.append(Item(2, (x * 8 * SCALE), (y * 8 * SCALE) - 50, scale_item))
-                          #      temp.add(item_group)
+                        #      temp.add(item_group)
                         if layer == 6:
                             temp.add(exit_group)
                         if layer == 5:
                             temp.add(mob_group)
-                        if layer == 4:
-                            temp.add(trap_group)
+                        # if layer == 4:
+                        #     temp.add(trap_group)
                         if layer == 3:
                             temp.add(wall_group)
                         if layer == 2:
@@ -358,7 +396,8 @@ def generate_level(filename, LEVEL_COUNT):
         print(f)
 
 
-player, items = generate_level(file_name1, 0)
+level_count = 0
+player, items = generate_level(file_name1, level_count)
 
 if __name__ == '__main__':
     running = True
@@ -419,10 +458,7 @@ if __name__ == '__main__':
         for i in items:
             i.update()
         for sprite in all_sprites:
-            camera.apply(sprite)
-        tiles_group.draw(screen)
-        player_group.draw(screen)
-        item_group.draw(screen)
+            screen.blit(sprite.image, camera.apply(sprite))
 
         pygame.display.update()
         clock.tick(FPS)
