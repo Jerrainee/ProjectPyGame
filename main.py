@@ -170,19 +170,19 @@ class Player(pygame.sprite.Sprite):
             self.cur_animation = 3
             self.check = False
 
-        self.fall_y += GRAVITY
-        if self.fall_y > 11:
-            self.fall_y = 11
-
         if self.dash_speed:
-            self.fall_y = 0.1
-            self.rect.x += STEP * self.dash_speed
+            self.fall_y = 0
+            dx += STEP * self.dash_speed
             if pygame.sprite.spritecollideany(self, wall_group):
                 self.rect.x -= STEP * self.dash_speed
             if self.sight:
                 self.dash_speed += 1
             else:
                 self.dash_speed -= 1
+
+        self.fall_y += GRAVITY
+        if self.fall_y > 11:
+            self.fall_y = 11
 
         dy += self.fall_y
 
@@ -203,14 +203,15 @@ class Player(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, ladder_group):
             self.in_air = False
             self.check = True
+            self.rect.y -= dy + 0.1
             if not moving_down:
-                self.rect.y -= dy
                 if jump:
                     self.rect.y -= STEP * 0.8
                     self.cur_animation = 4
                 else:
                     self.cur_animation = 0
             else:
+                self.rect.y += STEP - 0.5
                 self.cur_animation = 4
 
         if pygame.sprite.spritecollideany(self, wall_group):
@@ -218,12 +219,10 @@ class Player(pygame.sprite.Sprite):
             if self.fall_y < 0:
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
-            if self.fall_y > 0:
+            elif self.fall_y > 0:
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
                 self.in_air = False
-        else:
-            self.in_air = True
         if pygame.sprite.spritecollideany(self, trap_group):
             screen.fill(pygame.Color("red"))
             self.rect.x -= dx * 2
@@ -333,14 +332,12 @@ class Camera:
         y = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
         x = min(0, x)  # Левая сторона
         y = min(0, y)  # Верхняя сторона
-        print(y)
         if level_count == 0:
             SCALE = 6
         elif level_count == 2:
             SCALE = 3
         x = max(-(map.width * map.tilewidth * SCALE - WIDTH), x)  # Правая сторона
         y = max(-(map.height * map.tilewidth * SCALE - HEIGHT), y)  # Нижняя сторона
-        print(y, -(map.height * map.tilewidth * SCALE - HEIGHT))
 
         self.camera = pygame.Rect(x, y, WIDTH, HEIGHT)
 
@@ -379,8 +376,8 @@ def generate_level(filename, LEVEL_COUNT):
                             temp.add(exit_group)
                         if layer == 5:
                             temp.add(mob_group)
-                        # if layer == 4:
-                        #     temp.add(trap_group)
+                        if layer == 4:
+                            temp.add(trap_group)
                         if layer == 3:
                             temp.add(wall_group)
                         if layer == 2:
