@@ -41,7 +41,7 @@ border_group = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
 
-
+level_count = 0
 def load_image(name, color_key=None):
     try:
         image = pygame.image.load(name).convert()
@@ -162,8 +162,8 @@ class Player(pygame.sprite.Sprite):
             self.n_dash = 0
         if self.n_dash < 1:
             self.n_dash += 0.025
-        if not self.in_air and self.dash_speed == 0:
-            self.dash_cooldown = True
+        # if not self.in_air and self.dash_speed == 0:
+        #     self.dash_cooldown = True
 
         elif self.in_air and self.check:
 
@@ -203,6 +203,7 @@ class Player(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, ladder_group):
             self.in_air = False
             self.check = True
+            self.dash_cooldown = True
             self.rect.y -= dy + 0.1
             if not moving_down:
                 if jump:
@@ -216,6 +217,7 @@ class Player(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollideany(self, wall_group):
             self.check = True
+            self.dash_cooldown = True
             if self.fall_y < 0:
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
@@ -223,7 +225,7 @@ class Player(pygame.sprite.Sprite):
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
                 self.in_air = False
-        if pygame.sprite.spritecollideany(self, trap_group):
+        if pygame.sprite.spritecollideany(self, trap_group) and self.dash_speed == 0:
             screen.fill(pygame.Color("red"))
             self.rect.x -= dx * 2
             self.rect.y -= dy * 2
@@ -231,9 +233,9 @@ class Player(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, exit_group):
             for i in all_sprites:
                 i.kill()
-            LEVEL_COUNT = 2
-            global player, item
-            player, item = generate_level(file_name3, LEVEL_COUNT)
+            global player, item, level_count
+            level_count += 1
+            player, item = generate_level(file_name3, level_count)
 
         self.update()
 
@@ -393,7 +395,6 @@ def generate_level(filename, LEVEL_COUNT):
         print(f)
 
 
-level_count = 0
 player, items = generate_level(file_name1, level_count)
 
 if __name__ == '__main__':
