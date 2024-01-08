@@ -105,7 +105,7 @@ class Player(pygame.sprite.Sprite):
         self.cur_frame = 0
         self.animation_list = []
         self.animation_cooldown = 0
-        self.check = True
+        self.is_move = True
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.image = pygame.transform.scale(self.image, (self.width * self.scale, self.height * self.scale))
@@ -132,28 +132,15 @@ class Player(pygame.sprite.Sprite):
         if moving_left:
             dx = -STEP
             self.sight = 1
-            if not self.dash_speed:
-                self.cur_animation = 1
-                self.check = True
         if moving_right:
             dx = STEP
             self.sight = 0
-            if not self.dash_speed:
-                self.cur_animation = 1
-                self.check = True
         if jump and not self.in_air:
-            self.cur_animation = 2
             self.fall_y = -11
             self.in_air = True
-            self.check = True
-
-        if not moving_left and not moving_right and not jump and not self.dash_speed and self.check:
-            self.cur_animation = 0
-            self.check = False
 
         # dash
         if dash and self.dash_cooldown and self.n_dash >= 1:
-            self.cur_animation = 5
             if self.sight:
                 self.dash_speed = -7
             else:
@@ -162,73 +149,83 @@ class Player(pygame.sprite.Sprite):
             self.n_dash = 0
         if self.n_dash < 1:
             self.n_dash += 0.025
-        # if not self.in_air and self.dash_speed == 0:
-        #     self.dash_cooldown = True
-
-        elif self.in_air and self.check:
-
-            self.cur_animation = 3
-            self.check = False
 
         if self.dash_speed:
             self.fall_y = 0
             dx += STEP * self.dash_speed
-            if pygame.sprite.spritecollideany(self, wall_group):
-                self.rect.x -= STEP * self.dash_speed
             if self.sight:
                 self.dash_speed += 1
             else:
                 self.dash_speed -= 1
 
+        # check current animation
+        if dx == 0 and not self.in_air:
+            self.cur_animation = 0
+        if moving_left or moving_right:
+            self.cur_animation = 1
+        if self.in_air:
+            self.cur_animation = 3
+        if jump and not self.in_air:
+            self.cur_animation = 2
+        if self.dash_speed or self.n_dash <= 0.4:
+            self.cur_animation = 5
+
+
+        # добавляем g
         self.fall_y += GRAVITY
         if self.fall_y > 11:
             self.fall_y = 11
 
         dy += self.fall_y
 
+        # смотрим коллайды по x
         self.rect.x += dx
 
-        if pygame.sprite.spritecollideany(self, wall_group):
+        if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
             self.rect.x -= dx
-        #    self.fall_y = 1
 
+        # смотрим коллайды по y
         self.rect.y += dy
-
-        if pygame.sprite.spritecollideany(self, vertical_borders):
-            self.rect.x -= dx
 
         if pygame.sprite.spritecollideany(self, horizontal_borders):
             pass  # смэрть
 
         if pygame.sprite.spritecollideany(self, ladder_group):
             self.in_air = False
-            self.check = True
             self.dash_cooldown = True
             self.rect.y -= dy + 0.1
             if not moving_down:
                 if jump:
-                    self.rect.y -= STEP * 0.8
+                    self.is_move = True
+                    self.rect.y -= STEP * 0.6
                     self.cur_animation = 4
+                    if pygame.sprite.spritecollideany(self, wall_group):
+                        self.rect.y -= STEP * 0.8
                 else:
                     self.cur_animation = 0
             else:
-                self.rect.y += STEP - 0.5
+                self.is_move = True
+                self.rect.y += STEP * 0.6
                 self.cur_animation = 4
+                if pygame.sprite.spritecollideany(self, wall_group):
+                    self.rect.y -= STEP * 0.6
 
         if pygame.sprite.spritecollideany(self, wall_group):
-            self.check = True
-            self.dash_cooldown = True
-            if self.fall_y < 0:
+            if dy < 0:
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
-            elif self.fall_y > 0:
+
+            # соприкосновение с землей
+            elif dy > 0:
+                self.dash_cooldown = True
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
                 self.in_air = False
+
         if pygame.sprite.spritecollideany(self, trap_group) and self.dash_speed == 0:
             screen.fill(pygame.Color("red"))
-            self.rect.x -= dx * 2
-            self.rect.y -= dy * 2
+            self.rect.x -= dx * 7
+            self.rect.y -= dy * 7
 
         if pygame.sprite.spritecollideany(self, exit_group):
             for i in all_sprites:
@@ -240,7 +237,6 @@ class Player(pygame.sprite.Sprite):
         self.update()
 
     def update(self):
-        # global temp
         try:
             if self.animation_cooldown >= 1:
                 self.image = self.animation_list[self.cur_animation][self.cur_frame]
@@ -249,7 +245,6 @@ class Player(pygame.sprite.Sprite):
                 self.cur_frame += 1
                 if self.cur_frame >= len(self.animation_list[self.cur_animation]):
                     self.cur_frame = 0
-                #    temp.add(all_sprites)
                 self.animation_cooldown = 0
             else:
                 self.animation_cooldown += 0.12
