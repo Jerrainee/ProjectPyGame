@@ -105,7 +105,6 @@ class Player(pygame.sprite.Sprite):
         self.cur_frame = 0
         self.animation_list = []
         self.animation_cooldown = 0
-        self.is_move = True
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.image = pygame.transform.scale(self.image, (self.width * self.scale, self.height * self.scale))
