@@ -142,7 +142,7 @@ class Player(pygame.sprite.Sprite):
         if (jump and not self.in_air) or (jump and double_jump_check and double_jump_unlock and self.in_air):
             if self.jump_count <= 1:
                 self.jump_count += 1
-                self.fall_y = -11.5
+                self.fall_y = -11
                 self.in_air = True
                 double_jump_check = False
 
@@ -226,7 +226,8 @@ class Player(pygame.sprite.Sprite):
             # соприкосновение с землей
             if dy > 0:
                 self.jump_count = 0
-                self.dash_cooldown = True
+                if not self.dash_speed:
+                    self.dash_cooldown = True
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
                 self.in_air = False
