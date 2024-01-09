@@ -143,7 +143,6 @@ class Player(pygame.sprite.Sprite):
             if self.jump_count <= 1:
                 self.jump_count += 1
                 self.fall_y = -11
-                self.in_air = True
                 double_jump_check = False
 
         # dash
@@ -247,8 +246,8 @@ class Player(pygame.sprite.Sprite):
             level_count += 1
             player, item = generate_level(file_name3, level_count)
 
-       # print(self.in_air)
-        #print(self.fall_y)
+        # print(self.in_air)
+        # print(self.fall_y)
 
         self.update()
 
@@ -267,8 +266,6 @@ class Player(pygame.sprite.Sprite):
         except Exception:
             self.cur_frame = 0
 
-        if self.cur_animation == 5 and self.dash_speed == 0:
-            self.cur_animation = 0
         if self.dash_speed:
             self.animation_cooldown = 1
             self.cur_animation = 5
