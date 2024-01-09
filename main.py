@@ -16,7 +16,8 @@ moving_down = False
 jump = False
 dash = False
 dash_unlock = False
-double_jump_unlock = False
+double_jump_unlock = True
+double_jump_check = False
 pygame.init()
 
 size = WIDTH, HEIGHT = 1280, 720
@@ -25,7 +26,7 @@ map = None
 screen = pygame.display.set_mode(size)
 clock = pygame.time.Clock()
 
-pygame.display.set_caption('Название игры')
+pygame.display.set_caption('V.L.A.D')
 
 all_sprites = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
@@ -101,6 +102,7 @@ class Player(pygame.sprite.Sprite):
         self.dash_cooldown = True
         self.dash_speed = 0
         self.n_dash = 1
+        self.jump_count = 0
         self.cur_animation = 0
         self.cur_frame = 0
         self.animation_list = []
@@ -134,9 +136,15 @@ class Player(pygame.sprite.Sprite):
         if moving_right:
             dx = STEP
             self.sight = 0
-        if jump and not self.in_air:
-            self.fall_y = -11
-            self.in_air = True
+
+        # jump / double jump
+        global double_jump_unlock, double_jump_check
+        if (jump and not self.in_air) or (jump and double_jump_check and double_jump_unlock and self.in_air):
+            if self.jump_count <= 1:
+                self.jump_count += 1
+                self.fall_y = -11.5
+                self.in_air = True
+                double_jump_check = False
 
         # dash
         if dash and self.dash_cooldown and self.n_dash >= 1:
@@ -190,20 +198,21 @@ class Player(pygame.sprite.Sprite):
             pass  # смэрть
 
         if pygame.sprite.spritecollideany(self, ladder_group):
+            self.jump_count = 0
+            self.fall_y = 0
             self.in_air = False
             self.dash_cooldown = True
             self.rect.y -= dy + 0.1
             if not moving_down:
                 if jump:
-                    self.is_move = True
+                    self.fall_y = -11
                     self.rect.y -= STEP * 0.6
                     self.cur_animation = 4
                     if pygame.sprite.spritecollideany(self, wall_group):
-                        self.rect.y -= STEP * 0.8
+                        self.rect.y -= STEP * 0.6
                 else:
                     self.cur_animation = 0
             else:
-                self.is_move = True
                 self.rect.y += STEP * 0.6
                 self.cur_animation = 4
                 if pygame.sprite.spritecollideany(self, wall_group):
@@ -215,16 +224,20 @@ class Player(pygame.sprite.Sprite):
                 self.fall_y = 0
 
             # соприкосновение с землей
-            elif dy > 0:
+            if dy > 0:
+                self.jump_count = 0
                 self.dash_cooldown = True
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
                 self.in_air = False
+        else:
+            if not pygame.sprite.spritecollideany(self, ladder_group):
+                self.in_air = True
 
         if pygame.sprite.spritecollideany(self, trap_group) and self.dash_speed == 0:
             screen.fill(pygame.Color("red"))
-            self.rect.x -= dx * 7
-            self.rect.y -= dy * 7
+            self.rect.x -= dx * 5
+            self.rect.y -= dy * 5
 
         if pygame.sprite.spritecollideany(self, exit_group):
             for i in all_sprites:
@@ -232,6 +245,9 @@ class Player(pygame.sprite.Sprite):
             global player, item, level_count
             level_count += 1
             player, item = generate_level(file_name3, level_count)
+
+       # print(self.in_air)
+        #print(self.fall_y)
 
         self.update()
 
@@ -441,6 +457,7 @@ if __name__ == '__main__':
                     moving_right = False
                 if event.key == pygame.K_SPACE or event.key == pygame.K_w:
                     jump = False
+                    double_jump_check = True
                 if event.key == pygame.K_s:
                     moving_down = False
                 if event.key == pygame.K_q and dash_unlock:
