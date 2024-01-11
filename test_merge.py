@@ -743,7 +743,6 @@ class HealthBar(pygame.sprite.Sprite):
 
             self.rect = self.image.get_rect()
             screen.blit(self.image, (5 + 64 * i, 5))
-            pygame.display.flip()
             # self.width = self.image.get_width()
             # self.height = self.image.get_height()                 # Не работает ! Я отключил вызов в цикле running
             # self.rect.x = 5 + 64 * i
@@ -1093,11 +1092,11 @@ if __name__ == '__main__':
 
         player.move(moving_left, moving_right, jump, moving_down, dash)
         camera.update(player)
-       # hpBar.update(player)
         for i in items:
             i.update()
         for sprite in all_sprites:
             screen.blit(sprite.image, camera.apply(sprite))
+        hpBar.update(player)
 
         # Обновление экрана
         pygame.display.flip()
