@@ -549,6 +549,10 @@ class Player(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, horizontal_borders):
             pass  # гг выпал за рамки уровня, смерть
 
+        if pygame.sprite.spritecollideany(self, enemy_group):
+            self.fall_y = -11 # отскок от моба (как прыжок)
+            # гг прыгнул на голову моба, моб должен получить урон
+
         if pygame.sprite.spritecollideany(self, ladder_group):
             self.jump_count = 0
             self.fall_y = 0
@@ -589,8 +593,9 @@ class Player(pygame.sprite.Sprite):
                 self.in_air = True
 
         if pygame.sprite.spritecollideany(self, trap_group) and self.dash_speed == 0:
-            pass  # Получение урона от шипа !
-            # Надо придумать функционал шипов
+            self.fall_y = -11 # отскок от шипа (как прыжок)
+            # Получение урона от шипа !
+            # функционал работает мега криво и кринжово, надо что-то придумать
 
         if pygame.sprite.spritecollideany(self, exit_group):
             for i in all_sprites:
@@ -740,7 +745,7 @@ class HealthBar(pygame.sprite.Sprite):
             screen.blit(self.image, (5 + 64 * i, 5))
             pygame.display.flip()
             # self.width = self.image.get_width()
-            # self.height = self.image.get_height()
+            # self.height = self.image.get_height()                 # Не работает ! Я отключил вызов в цикле running
             # self.rect.x = 5 + 64 * i
             # self.rect.y = 2100
             # self.rect = self.image.get_rect().move(
@@ -985,7 +990,7 @@ def generate_level(filename, LEVEL_COUNT):
                             new_player = Player((x * 8 * n * SCALE), (y * 8 * n * SCALE), scale_player)
                         if layer == 10:
                             temp.add(treasure_group)
-                            new_items.append(Item(0, (x * 8 * SCALE), (y * 8 * SCALE), 2))
+                            new_items.append(Item(0, (x * 8 * SCALE - 5), (y * 8 * SCALE - 5), 2.2))
                         if layer == 9:
                             new_items.append(Item(1, (x * 8 * SCALE), (y * 8 * SCALE) - 50, 1))
                         if layer == 8:
@@ -995,9 +1000,11 @@ def generate_level(filename, LEVEL_COUNT):
                             temp.add(exit_group)
                         if layer == 6:
                             # мини босс
+                            # тут должнен быть вызван его класс, чтобы он появился
                             temp.add(enemy_group)
                         if layer == 5:
                             # обычные враги
+                            # тут должнен быть вызван их класс, чтобы они появились
                             temp.add(enemy_group)
                         if layer == 4:
                             temp.add(trap_group)
@@ -1010,16 +1017,6 @@ def generate_level(filename, LEVEL_COUNT):
                         if layer == 0:
                             temp.add(background_group)
                         temp.add(all_sprites)
-
-        # генерация рандомных айтемов, исправьте чтоб работала исправно пэжэ
-        item_types = [1, 2]
-        item_count = randint(5, 10)
-
-        for _ in range(item_count):
-            item_type = choice(item_types)
-            item_pos = (randint(0, map.width - 1) * 8 * n * SCALE, randint(0, map.height - 1) * 8 * n * SCALE)
-            new_items.append(Item(item_type, item_pos[0], item_pos[1], scale_item))
-
         print(1)
         return new_player, new_items
     except Exception as f:
@@ -1096,7 +1093,7 @@ if __name__ == '__main__':
 
         player.move(moving_left, moving_right, jump, moving_down, dash)
         camera.update(player)
-      #  hpBar.update(player)
+       # hpBar.update(player)
         for i in items:
             i.update()
         for sprite in all_sprites:
