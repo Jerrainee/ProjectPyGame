@@ -3,6 +3,7 @@ import sys
 
 import pygame
 import pytmx
+from backend_main import Hero
 
 file_name1 = 'data/levels/level1.tmx'
 file_name3 = 'data/levels/level3.tmx'
@@ -41,8 +42,12 @@ trap_group = pygame.sprite.Group()
 border_group = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
+interface_group = pygame.sprite.Group()
+hp_group = pygame.sprite.Group()
 
 level_count = 0
+
+
 def load_image(name, color_key=None):
     try:
         image = pygame.image.load(name).convert()
@@ -113,6 +118,10 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(
             pos_x, pos_y)
 
+        self.hero = Hero()
+
+        self.hearts = Hearts(self)
+
         animation_types = ['idle', 'run', 'jump', 'in_air', 'climb', 'dash']
         for animation in animation_types:
             cur_animations_lst = []
@@ -175,7 +184,6 @@ class Player(pygame.sprite.Sprite):
             self.cur_animation = 2
         if self.dash_speed or self.n_dash <= 0.4:
             self.cur_animation = 5
-
 
         # добавляем g
         self.fall_y += GRAVITY
@@ -245,6 +253,9 @@ class Player(pygame.sprite.Sprite):
             global player, item, level_count
             level_count += 1
             player, item = generate_level(file_name3, level_count)
+
+        if pygame.sprite.spritecollideany(self, mob_group):
+            self.hero.received_hit()
 
         # print(self.in_air)
         # print(self.fall_y)
@@ -326,6 +337,31 @@ class Item(pygame.sprite.Sprite):
         except Exception:
             self.cur_frame = 0
 
+class Hearts:
+    def __init__(self, player):
+        self.active_hps = []
+        for i in range(len(player.hero.base_health.base_health)):
+            hp_sprite = pygame.sprite.Sprite(hp_group, interface_group)
+            self.active_hps.append(hp_sprite)
+            if player.hero.base_health.base_health[i] == 1:
+                hp_sprite.image = load_image('data/images/interface/healthbar/hp_active/0.png')
+            elif player.hero.base_health.base_health[i] == 0:
+                hp_sprite.image = load_image('data/images/interface/healthbar/hp_inactive/0.png')
+            hp_sprite.rect = hp_sprite.image.get_rect()
+            hp_sprite.rect.x = 5 + 64 * i + 2 * i
+            hp_sprite.rect.y = 5
+    # def damage(self):
+    #     self.active_hps
+
+# class Interface:
+#     def __init__(self, player):
+#         self.screen = screen
+#
+#     def draw(self, player):
+#         for i in player.hero.base_health.base_health:
+#             self.screen.bl
+
+
 
 class Camera:
     # зададим начальный сдвиг камеры
@@ -402,7 +438,6 @@ def generate_level(filename, LEVEL_COUNT):
     except Exception as f:
         print(f)
 
-
 player, items = generate_level(file_name1, level_count)
 
 if __name__ == '__main__':
@@ -466,7 +501,7 @@ if __name__ == '__main__':
             i.update()
         for sprite in all_sprites:
             screen.blit(sprite.image, camera.apply(sprite))
-
+        interface_group.draw(screen)
         pygame.display.update()
         clock.tick(FPS)
 terminate()
