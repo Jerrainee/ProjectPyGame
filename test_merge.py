@@ -867,7 +867,10 @@ class Item(pygame.sprite.Sprite):
                     self.cur_frame = 0
                 self.animation_cooldown = 0
             else:
-                self.animation_cooldown += 0.12
+                if self.item_type == 2:
+                    self.animation_cooldown += 0.02
+                else:
+                    self.animation_cooldown += 0.15
         except Exception:
             self.cur_frame = 0
 
@@ -987,7 +990,7 @@ def generate_level(filename, LEVEL_COUNT):
                         if layer == 9:
                             new_items.append(Item(1, (x * 8 * SCALE), (y * 8 * SCALE) - 50, 1))
                         if layer == 8:
-                            new_items.append(Item(item_type, (x * 8 * SCALE), (y * 8 * SCALE) - 50, 1))
+                            new_items.append(Item(item_type, (x * 8 * SCALE + 5), (y * 8 * SCALE) - 70, 4.5))
                         if layer == 7:
                             temp.add(exit_group)
                         if layer == 6:
