@@ -19,8 +19,9 @@ moving_down = False
 jump = False
 dash = False
 dash_unlock = False
-double_jump_unlock = True
+double_jump_unlock = False
 double_jump_check = False
+push_event = False
 pygame.init()
 
 size = WIDTH, HEIGHT = 1280, 720
@@ -594,7 +595,7 @@ class Player(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollideany(self, trap_group) and self.dash_speed == 0:
             self.fall_y = -11 # отскок от шипа (как прыжок)
-            # Получение урона от шипа !
+            # Получение урона от шипа
             # функционал работает мега криво и кринжово, надо что-то придумать
 
         if pygame.sprite.spritecollideany(self, exit_group):
@@ -685,10 +686,12 @@ class Player(pygame.sprite.Sprite):
         self.items['attack'].pop(index)
 
     def used_key(self):
+        global push_event
         key = False  # проверка на ключ
-        if key:
+        if key and push_event:
             self.items['key'].pop()
             # открытие сундука, поздравление игрока
+            push_event = False
             return True
 
         else:
@@ -742,14 +745,7 @@ class HealthBar(pygame.sprite.Sprite):
                 self.cur_frame = 0
 
             self.rect = self.image.get_rect()
-            screen.blit(self.image, (5 + 64 * i, 5))
-            # self.width = self.image.get_width()
-            # self.height = self.image.get_height()                 # Не работает ! Я отключил вызов в цикле running
-            # self.rect.x = 5 + 64 * i
-            # self.rect.y = 2100
-            # self.rect = self.image.get_rect().move(
-            #   self.pos_x, self.pos_y)
-
+            screen.blit(self.image, (-15 + 64 * i, -15))
 
 
 
@@ -844,10 +840,8 @@ class Item(pygame.sprite.Sprite):
         self.height = self.image.get_height()
         pygame.transform.scale(self.image, (self.width // 2, self.height // 2))
 
-    #  screen.blit(pygame.transform.flip(self.image, False, False), self.rect)
-
     def update(self):
-        # функционал
+        # функционал (гг находится рядом с предметом)
         global dash_unlock, double_jump_unlock
         if pygame.sprite.spritecollideany(self, player_group):
             if self.item_lst[self.item_type] == 'dash':
@@ -861,7 +855,7 @@ class Item(pygame.sprite.Sprite):
                 self.kill()
             if self.item_lst[self.item_type] == 'treasure':
                 # коллайд с сундуком, вызов функции открытия
-                if Player.used_key:
+                if Player.used_key:  # функцию кста надо переписать
                     self.kill()
 
         # анимации айтемов на уровне
@@ -967,9 +961,9 @@ def generate_level(filename, LEVEL_COUNT):
     global map
     try:
         if LEVEL_COUNT == 0:
-            SCALE, n, scale_player, scale_item, item_type = 6, 1, 1.7, 1, 2
+            SCALE, scale_player, item_type = 6, 1.7, 2
         elif LEVEL_COUNT == 1:
-            SCALE, n, scale_player, scale_item, item_type = 3, 2, 1.5, 1, 3
+            SCALE, scale_player, item_type = 3, 1.5, 3
         map = pytmx.load_pygame(filename)
         tile_size = map.tilewidth
         Border(0, map.height * tile_size * SCALE, map.width * tile_size * SCALE, map.height * tile_size * SCALE)
@@ -984,17 +978,16 @@ def generate_level(filename, LEVEL_COUNT):
                     if image:
                         temp = Tile(pygame.transform.scale(image, (tile_size * SCALE, tile_size * SCALE)),
                                     x * tile_size * SCALE,
-                                    y * tile_size * SCALE, int(8 * n * SCALE), int(8 * n * SCALE), layer)
+                                    y * tile_size * SCALE, int(tile_size * SCALE), int(tile_size * SCALE), layer)
                         if layer == 12:
-                            new_player = Player((x * 8 * n * SCALE), (y * 8 * n * SCALE), scale_player)
+                            new_player = Player((x * tile_size * SCALE), (y * tile_size * SCALE), scale_player)
                         if layer == 10:
                             temp.add(treasure_group)
                             new_items.append(Item(0, (x * 8 * SCALE - 5), (y * 8 * SCALE - 5), 2.2))
                         if layer == 9:
                             new_items.append(Item(1, (x * 8 * SCALE), (y * 8 * SCALE) - 50, 1))
                         if layer == 8:
-                            new_items.append(Item(item_type, (x * 8 * SCALE), (y * 8 * SCALE) - 50, scale_item))
-                        #   temp.add(item_group)
+                            new_items.append(Item(item_type, (x * 8 * SCALE), (y * 8 * SCALE) - 50, 1))
                         if layer == 7:
                             temp.add(exit_group)
                         if layer == 6:
@@ -1068,7 +1061,12 @@ if __name__ == '__main__':
                 if event.key == pygame.K_q and dash_unlock:
                     dash = True
                 if event.key == pygame.K_e:
-                    action = True
+                    push_event = True
+                if event.type == pygame.K_f:
+                # отображение инвенторя
+                    print('inventory')
+                    pass
+
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_a:
@@ -1083,12 +1081,10 @@ if __name__ == '__main__':
                 if event.key == pygame.K_q and dash_unlock:
                     dash = False
                 if event.key == pygame.K_e:
-                    action = False
+                    push_event = False
+                if event.type == pygame.K_f:
+                    pass # закрытие инвентаря
 
-            if event.type == pygame.K_e:
-                # отображение инвенторя
-                print('inventory')
-                pass
 
         player.move(moving_left, moving_right, jump, moving_down, dash)
         camera.update(player)
