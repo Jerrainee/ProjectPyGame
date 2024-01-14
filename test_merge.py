@@ -52,6 +52,8 @@ treasure_group = pygame.sprite.Group()
 
 pause_buttons_group = pygame.sprite.Group()
 menu_sprite_group = pygame.sprite.Group()
+death_screen_group = pygame.sprite.Group()
+win_screen_group = pygame.sprite.Group()
 
 level_count = 0
 
@@ -72,28 +74,45 @@ def load_image(name, color_key=None):
     return image
 
 
-
 player_image = load_image('data/images/entities/player/hero.png', -1)
 dash_image = load_image('data/images/items/key/0.png', -1)
 
 play_pause_button = pygame.sprite.Sprite(pause_buttons_group)
-play_pause_button.image = load_image('data/images/interface/pause/play_button.png',  -1)
+play_pause_button.image = load_image('data/images/interface/pause/play_button.png', -1)
 play_pause_button.rect = play_pause_button.image.get_rect()
 play_pause_button.rect.x = WIDTH // 2 - play_pause_button.image.get_width() - 20
 play_pause_button.rect.y = HEIGHT // 2 - play_pause_button.image.get_height() // 2
 menu_pause_button = pygame.sprite.Sprite(pause_buttons_group)
-menu_pause_button.image = load_image('data/images/interface/pause/menu_button.png',  -1)
+menu_pause_button.image = load_image('data/images/interface/pause/menu_button.png', -1)
 menu_pause_button.rect = menu_pause_button.image.get_rect()
 menu_pause_button.rect.x = WIDTH // 2 + menu_pause_button.image.get_width() + 20
 menu_pause_button.rect.y = HEIGHT // 2 - menu_pause_button.image.get_height() // 2
 
 background_menu_image = load_image('data/images/interface/menu/background.png')
 start_menu_button = pygame.sprite.Sprite(menu_sprite_group)
-start_menu_button.image = load_image('data/images/interface/menu/start_button.png',  -1)
+start_menu_button.image = load_image('data/images/interface/menu/start_button.png', -1)
 start_menu_button.rect = start_menu_button.image.get_rect()
 start_menu_button.rect.x = WIDTH // 2 - start_menu_button.image.get_width() // 2
 start_menu_button.rect.y = HEIGHT // 2 - start_menu_button.image.get_height() // 2
 
+background_death_screen = load_image('data/images/interface/death_screen/background.png')
+restart_death_screen_button = pygame.sprite.Sprite(death_screen_group)
+restart_death_screen_button.image = load_image('data/images/interface/death_screen/restart_button.png', -1)
+restart_death_screen_button.rect = restart_death_screen_button.image.get_rect()
+restart_death_screen_button.rect.x = WIDTH // 2 - restart_death_screen_button.image.get_width() - 20
+restart_death_screen_button.rect.y = HEIGHT // 4 * 3
+menu_death_screen_button = pygame.sprite.Sprite(death_screen_group)
+menu_death_screen_button.image = load_image('data/images/interface/death_screen/menu_button.png')
+menu_death_screen_button.rect = menu_death_screen_button.image.get_rect()
+menu_death_screen_button.rect.x = WIDTH // 2 + menu_death_screen_button.image.get_width() // 2 + 20
+menu_death_screen_button.rect.y = HEIGHT // 4 * 3
+
+background_win_sreen = load_image('data/images/interface/win_screen/background.png')
+menu_win_screen_button = pygame.sprite.Sprite(win_screen_group)
+menu_win_screen_button.image = load_image('data/images/interface/win_screen/menu_button.png')
+menu_win_screen_button.rect = menu_win_screen_button.image.get_rect()
+menu_win_screen_button.rect.x = WIDTH // 2 - menu_win_screen_button.image.get_width() // 2
+menu_win_screen_button.rect.y = HEIGHT // 2 * 3 - menu_win_screen_button.image.get_height() // 2
 
 class Score:
     def __init__(self):
@@ -576,7 +595,9 @@ class Player(pygame.sprite.Sprite):
         self.rect.y += dy
 
         if pygame.sprite.spritecollideany(self, horizontal_borders):
-            pass  # гг выпал за рамки уровня, смерть
+            for i in self.base_health.base_health:
+                if i == 1:
+                    self.received_hit()
 
         if pygame.sprite.spritecollideany(self, enemy_group):
             self.fall_y = -11  # отскок от моба (как прыжок)
@@ -617,7 +638,8 @@ class Player(pygame.sprite.Sprite):
                 self.fall_y = 0
                 self.in_air = False
         else:
-            if not pygame.sprite.spritecollideany(self, ladder_group) and not (pygame.sprite.spritecollideany(self, platform_group)):
+            if not pygame.sprite.spritecollideany(self, ladder_group) and not (
+            pygame.sprite.spritecollideany(self, platform_group)):
                 self.in_air = True
                 self.platform_check = False
 
@@ -638,15 +660,19 @@ class Player(pygame.sprite.Sprite):
             self.fall_y = -11  # отскок от шипа (как прыжок)
             # Получение урона от шипа
             # функционал работает мега криво и кринжово, надо что-то придумать
+            self.received_hit()
 
         if pygame.sprite.spritecollideany(self, exit_group):
             for i in all_sprites:
                 i.kill()
-            global player, item, level_count
+            global player, item, level_count, win_screen
             level_count += 1
-            player, item = generate_level(file_name2, level_count)
+            if level_count <= 3:
+                player, item = generate_level(file_name2, level_count)
+            else:
+                win_screen = True
 
-        #print(self.in_air)
+        # print(self.in_air)
         # print(self.fall_y)
 
         self.update()
@@ -922,7 +948,7 @@ class Health:
             self.base_health.append(1)
 
     def received_hit(self):
-        for i in range(len(self.base_health) - 1, 0, -1):
+        for i in range(len(self.base_health) - 1, -1, -1):
 
             if self.base_health[i] == 1:
 
@@ -930,6 +956,9 @@ class Health:
 
                 if set(self.base_health) == {0}:
                     print("Hero is dead.")
+                    global death
+                    death = True
+                    print(death)
 
                 break
         else:
@@ -1000,8 +1029,9 @@ class Camera:
 
 
 def generate_level(filename, LEVEL_COUNT):
-    global map
+    global map, all_sprites
     try:
+        all_sprites = pygame.sprite.Group()
         if LEVEL_COUNT == 0:
             SCALE, scale_player, item_type = 6, 1.7, 2
         elif LEVEL_COUNT == 1:
@@ -1057,16 +1087,22 @@ def generate_level(filename, LEVEL_COUNT):
         print(f)
 
 
-
 if __name__ == '__main__':
     running = True
     menu = True
     camera = Camera()
     pause = False
+    win_screen = False
+    death = False
     while running:
         while menu:
             screen.blit(background_menu_image, (0, 0))
             menu_sprite_group.draw(screen)
+            moving_left = False
+            moving_right = False
+            jump = False
+            moving_down = False
+            dash = False
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -1077,6 +1113,42 @@ if __name__ == '__main__':
                         player, items = generate_level(file_name1, level_count)
                         hpBar = HealthBar(player)
             pygame.display.flip()
+        while death:  # экран смерти
+            screen.blit(background_death_screen, (0, 0))
+            death_screen_group.draw(screen)
+            moving_left = False
+            moving_right = False
+            jump = False
+            moving_down = False
+            dash = False
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    death = False
+                if pygame.mouse.get_pressed()[0]:
+                    if restart_death_screen_button.rect.collidepoint(event.pos):
+                        player, items = generate_level(file_name1, level_count)
+                        hpBar = HealthBar(player)
+                        death = False
+                    if menu_death_screen_button.rect.collidepoint(event.pos):
+                        menu = True
+                        death = False
+            pygame.display.flip()
+        while win_screen:  # финальный экран
+            win_screen_group.draw(screen)
+            font = pygame.font.Font(None, 50)
+            text = font.render(f"SCORE: {player.exp}", True, (100, 255, 100))
+            screen.blit(text, (WIDTH // 2 - text.get_width() // 2, WIDTH // 2 - text.get_height() // 2))
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    death = False
+                if pygame.mouse.get_pressed()[0]:
+                    if menu_win_screen_button.rect.collidepoint(event.pos):
+                        menu = True
+                        win_screen = False
+            pygame.display.flip()
+
         screen.fill(pygame.Color("black"))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1093,7 +1165,6 @@ if __name__ == '__main__':
                     pause_buttons_group.draw(screen)
                     screen.blit(surf, (0, 0))
 
-
                     for event in pygame.event.get():
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                             pause = False
@@ -1106,7 +1177,6 @@ if __name__ == '__main__':
                             if menu_pause_button.rect.collidepoint(event.pos):
                                 menu = True
                                 pause = False
-                                print(menu)
                         if event.type == pygame.KEYUP:
                             if event.key == pygame.K_a:
                                 moving_left = False
@@ -1118,7 +1188,7 @@ if __name__ == '__main__':
                                 moving_down = False
                             if event.key == pygame.K_q and dash_unlock:
                                 dash = False
-                        pygame.display.flip()
+                    pygame.display.flip()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_a:
                     moving_left = True
@@ -1133,7 +1203,7 @@ if __name__ == '__main__':
                 if event.key == pygame.K_e:
                     push_event = True
                 if event.type == pygame.K_f:
-                    # отображение инвенторя
+                    # отображение инвентаря
                     print('inventory')
                     pass
             if event.type == pygame.KEYUP:
