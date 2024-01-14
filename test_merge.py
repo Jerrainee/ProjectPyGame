@@ -49,6 +49,9 @@ horizontal_borders = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
 treasure_group = pygame.sprite.Group()
 
+pause_buttons_group = pygame.sprite.Group()
+menu_sprite_group = pygame.sprite.Group()
+
 level_count = 0
 
 
@@ -68,8 +71,27 @@ def load_image(name, color_key=None):
     return image
 
 
+
 player_image = load_image('data/images/entities/player/hero.png', -1)
 dash_image = load_image('data/images/items/key/0.png', -1)
+
+play_pause_button = pygame.sprite.Sprite(pause_buttons_group)
+play_pause_button.image = load_image('data/images/interface/pause/play_button.png')
+play_pause_button.rect = play_pause_button.image.get_rect()
+play_pause_button.rect.x = WIDTH // 2 - play_pause_button.image.get_width() - 20
+play_pause_button.rect.y = HEIGHT // 2 - play_pause_button.image.get_height() // 2
+menu_pause_button = pygame.sprite.Sprite(pause_buttons_group)
+menu_pause_button.image = load_image('data/images/interface/pause/menu_button.png')
+menu_pause_button.rect = menu_pause_button.image.get_rect()
+menu_pause_button.rect.x = WIDTH // 2 + menu_pause_button.image.get_width() + 20
+menu_pause_button.rect.y = HEIGHT // 2 - menu_pause_button.image.get_height() // 2
+
+background_menu_image = load_image('data/images/interface/menu/background.png')
+start_menu_button = pygame.sprite.Sprite(menu_sprite_group)
+start_menu_button.image = load_image('data/images/interface/menu/start_button.png')
+start_menu_button.rect = start_menu_button.image.get_rect()
+start_menu_button.rect.x = WIDTH // 2 - start_menu_button.image.get_width() // 2
+start_menu_button.rect.y = HEIGHT // 2 - start_menu_button.image.get_height() // 2
 
 
 class Score:
@@ -551,7 +573,7 @@ class Player(pygame.sprite.Sprite):
             pass  # гг выпал за рамки уровня, смерть
 
         if pygame.sprite.spritecollideany(self, enemy_group):
-            self.fall_y = -11 # отскок от моба (как прыжок)
+            self.fall_y = -11  # отскок от моба (как прыжок)
             # гг прыгнул на голову моба, моб должен получить урон
 
         if pygame.sprite.spritecollideany(self, ladder_group):
@@ -594,7 +616,7 @@ class Player(pygame.sprite.Sprite):
                 self.in_air = True
 
         if pygame.sprite.spritecollideany(self, trap_group) and self.dash_speed == 0:
-            self.fall_y = -11 # отскок от шипа (как прыжок)
+            self.fall_y = -11  # отскок от шипа (как прыжок)
             # Получение урона от шипа
             # функционал работает мега криво и кринжово, надо что-то придумать
 
@@ -629,7 +651,6 @@ class Player(pygame.sprite.Sprite):
         if self.dash_speed:
             self.animation_cooldown = 1
             self.cur_animation = 5
-
 
     def restore_health(self):
         self.base_health.restore_health(self)
@@ -698,6 +719,7 @@ class Player(pygame.sprite.Sprite):
             print("Can't use key here. There are no chests nearby.")
             return None
 
+
 class HealthBar(pygame.sprite.Sprite):
     def __init__(self, player):
         super().__init__(all_sprites)
@@ -746,8 +768,6 @@ class HealthBar(pygame.sprite.Sprite):
 
             self.rect = self.image.get_rect()
             screen.blit(self.image, (-15 + 64 * i, -15))
-
-
 
 
 def used_medical_item(self, item):
@@ -1018,28 +1038,57 @@ def generate_level(filename, LEVEL_COUNT):
         print(f)
 
 
-player, items = generate_level(file_name1, level_count)
 
 if __name__ == '__main__':
     running = True
+    menu = True
     camera = Camera()
-    hpBar = HealthBar(player)
     pause = False
     while running:
+        while menu:
+            print('dd')
+            screen.blit(background_menu_image, (0, 0))
+            menu_sprite_group.draw(screen)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    menu = False
+                if pygame.mouse.get_pressed()[0]:
+                    if start_menu_button.rect.collidepoint(event.pos):
+                        menu = False
+                        player, items = generate_level(file_name1, level_count)
+                        hpBar = HealthBar(player)
+            pygame.display.flip()
         screen.fill(pygame.Color("black"))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 pause = True
-
                 while pause:
+                    screen.fill((0, 0, 0))
+                    for sprite in all_sprites:
+                        screen.blit(sprite.image, camera.apply(sprite))
+                    surf = pygame.Surface((WIDTH, HEIGHT))
+                    surf.fill((255, 255, 255))
+                    surf.set_alpha(100)
+                    screen.blit(surf, (0, 0))
+                    screen.blit(play_pause_button.image, (play_pause_button.rect.x, play_pause_button.rect.y))
+                    screen.blit(menu_pause_button.image, (menu_pause_button.rect.x, menu_pause_button.rect.y))
+
                     for event in pygame.event.get():
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                             pause = False
                         if event.type == pygame.QUIT:
                             running = False
                             pause = False
+                        if pygame.mouse.get_pressed()[0]:
+                            if play_pause_button.rect.collidepoint(event.pos):
+                                pause = False
+                            if menu_pause_button.rect.collidepoint(event.pos):
+                                menu = True
+                                pause = False
+                                print(menu)
                         if event.type == pygame.KEYUP:
                             if event.key == pygame.K_a:
                                 moving_left = False
@@ -1051,7 +1100,7 @@ if __name__ == '__main__':
                                 moving_down = False
                             if event.key == pygame.K_q and dash_unlock:
                                 dash = False
-
+                        pygame.display.flip()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_a:
                     moving_left = True
@@ -1066,11 +1115,9 @@ if __name__ == '__main__':
                 if event.key == pygame.K_e:
                     push_event = True
                 if event.type == pygame.K_f:
-                # отображение инвенторя
+                    # отображение инвенторя
                     print('inventory')
                     pass
-
-
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_a:
                     moving_left = False
@@ -1086,9 +1133,7 @@ if __name__ == '__main__':
                 if event.key == pygame.K_e:
                     push_event = False
                 if event.type == pygame.K_f:
-                    pass # закрытие инвентаря
-
-
+                    pass  # закрытие инвентаря
         player.move(moving_left, moving_right, jump, moving_down, dash)
         camera.update(player)
         for i in items:
@@ -1096,9 +1141,7 @@ if __name__ == '__main__':
         for sprite in all_sprites:
             screen.blit(sprite.image, camera.apply(sprite))
         hpBar.update(player)
-
         # Обновление экрана
         pygame.display.flip()
-        pygame.display.update()
         clock.tick(FPS)
 terminate()
