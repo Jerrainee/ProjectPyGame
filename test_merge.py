@@ -38,6 +38,7 @@ player_group = pygame.sprite.Group()
 mini_boss_group = pygame.sprite.Group()
 boss_group = pygame.sprite.Group()
 wall_group = pygame.sprite.Group()
+platform_group = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
 background_group = pygame.sprite.Group()
 ladder_group = pygame.sprite.Group()
@@ -76,19 +77,19 @@ player_image = load_image('data/images/entities/player/hero.png', -1)
 dash_image = load_image('data/images/items/key/0.png', -1)
 
 play_pause_button = pygame.sprite.Sprite(pause_buttons_group)
-play_pause_button.image = load_image('data/images/interface/pause/play_button.png')
+play_pause_button.image = load_image('data/images/interface/pause/play_button.png',  -1)
 play_pause_button.rect = play_pause_button.image.get_rect()
 play_pause_button.rect.x = WIDTH // 2 - play_pause_button.image.get_width() - 20
 play_pause_button.rect.y = HEIGHT // 2 - play_pause_button.image.get_height() // 2
 menu_pause_button = pygame.sprite.Sprite(pause_buttons_group)
-menu_pause_button.image = load_image('data/images/interface/pause/menu_button.png')
+menu_pause_button.image = load_image('data/images/interface/pause/menu_button.png',  -1)
 menu_pause_button.rect = menu_pause_button.image.get_rect()
 menu_pause_button.rect.x = WIDTH // 2 + menu_pause_button.image.get_width() + 20
 menu_pause_button.rect.y = HEIGHT // 2 - menu_pause_button.image.get_height() // 2
 
 background_menu_image = load_image('data/images/interface/menu/background.png')
 start_menu_button = pygame.sprite.Sprite(menu_sprite_group)
-start_menu_button.image = load_image('data/images/interface/menu/start_button.png')
+start_menu_button.image = load_image('data/images/interface/menu/start_button.png',  -1)
 start_menu_button.rect = start_menu_button.image.get_rect()
 start_menu_button.rect.x = WIDTH // 2 - start_menu_button.image.get_width() // 2
 start_menu_button.rect.y = HEIGHT // 2 - start_menu_button.image.get_height() // 2
@@ -463,6 +464,7 @@ class Player(pygame.sprite.Sprite):
         self.dash_speed = 0
         self.n_dash = 1
         self.jump_count = 0
+        self.platform_check = True
         self.cur_animation = 0
         self.cur_frame = 0
         self.animation_list = []
@@ -554,6 +556,10 @@ class Player(pygame.sprite.Sprite):
         # смотрим коллайды по x
         self.rect.x += dx
 
+        if pygame.sprite.spritecollideany(self, platform_group):
+            if dy > 0:
+                self.rect.x -= dx
+
         if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
             self.rect.x -= dx
 
@@ -602,7 +608,6 @@ class Player(pygame.sprite.Sprite):
                 # персонаж стукается головой об стену
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
-
             if dy > 0:
                 # коллайд с землей
                 self.jump_count = 0
@@ -612,8 +617,22 @@ class Player(pygame.sprite.Sprite):
                 self.fall_y = 0
                 self.in_air = False
         else:
-            if not pygame.sprite.spritecollideany(self, ladder_group):
+            if not pygame.sprite.spritecollideany(self, ladder_group) and not (pygame.sprite.spritecollideany(self, platform_group)):
                 self.in_air = True
+                self.platform_check = False
+
+        if pygame.sprite.spritecollideany(self, platform_group):
+            flag = 0
+            if dy > 0 and not self.platform_check:
+                self.in_air = False
+                self.rect.y -= (dy + 0.1)
+                self.fall_y = 0
+                self.jump_count = 0
+                if not self.dash_speed:
+                    self.dash_cooldown = True
+                flag = 1
+            if not flag:
+                self.platform_check = True
 
         if pygame.sprite.spritecollideany(self, trap_group) and self.dash_speed == 0:
             self.fall_y = -11  # отскок от шипа (как прыжок)
@@ -627,7 +646,7 @@ class Player(pygame.sprite.Sprite):
             level_count += 1
             player, item = generate_level(file_name2, level_count)
 
-        # print(self.in_air)
+        #print(self.in_air)
         # print(self.fall_y)
 
         self.update()
@@ -1028,7 +1047,7 @@ def generate_level(filename, LEVEL_COUNT):
                         if layer == 2:
                             temp.add(ladder_group)
                         if layer == 1:
-                            temp.add(wall_group)
+                            temp.add(platform_group)
                         if layer == 0:
                             temp.add(background_group)
                         temp.add(all_sprites)
@@ -1046,7 +1065,6 @@ if __name__ == '__main__':
     pause = False
     while running:
         while menu:
-            print('dd')
             screen.blit(background_menu_image, (0, 0))
             menu_sprite_group.draw(screen)
             for event in pygame.event.get():
@@ -1072,9 +1090,9 @@ if __name__ == '__main__':
                     surf = pygame.Surface((WIDTH, HEIGHT))
                     surf.fill((255, 255, 255))
                     surf.set_alpha(100)
+                    pause_buttons_group.draw(screen)
                     screen.blit(surf, (0, 0))
-                    screen.blit(play_pause_button.image, (play_pause_button.rect.x, play_pause_button.rect.y))
-                    screen.blit(menu_pause_button.image, (menu_pause_button.rect.x, menu_pause_button.rect.y))
+
 
                     for event in pygame.event.get():
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
