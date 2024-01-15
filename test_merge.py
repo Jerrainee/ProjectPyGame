@@ -26,7 +26,6 @@ pygame.init()
 
 size = WIDTH, HEIGHT = 1280, 720
 map = None
-
 screen = pygame.display.set_mode(size)
 clock = pygame.time.Clock()
 
@@ -422,18 +421,13 @@ class MiniBoss(pygame.sprite.Sprite):
 
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, hero, pos_x, pos_y, scale):  # инициализация объекта класса Враг (обычный). передача аргумента гг
+    def __init__(self, hero, pos_x, pos_y, scale):
         super().__init__(enemy_group, all_sprites)
         self.image = enemy_image
         self.scale = scale
         self.fall_y = 0
-        self.in_air = True
+        self.in_air = False
         self.sight = 0
-        self.dash_cooldown = True
-        self.dash_speed = 0
-        self.n_dash = 1
-        self.jump_count = 0
-        self.platform_check = True
         self.cur_animation = 0
         self.cur_frame = 0
         self.animation_list = []
@@ -443,13 +437,12 @@ class Enemy(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.image, (self.width * self.scale, self.height * self.scale))
         self.rect = self.image.get_rect().move(
             pos_x, pos_y)
-
         self.base_health = Health(3)
         self.soul = Soul(0.1)
         self.dead_cond = False
         self.hero = hero
-
-        animation_types = ['idle', 'attack', 'run']
+        self.attack_buff = False
+        animation_types = ['idle', 'run', 'attack']
         for animation in animation_types:
             cur_animations_lst = []
             n = len(os.listdir(f'./data/images/entities/enemy/{animation}'))
@@ -460,28 +453,11 @@ class Enemy(pygame.sprite.Sprite):
                 cur_animations_lst.append(img)
             self.animation_list.append(cur_animations_lst)
 
-    def update(self):
-        # отрисовка спрайтов врага, нужен фикс
-        try:
-            if self.animation_cooldown >= 1:
-                self.image = self.animation_list[self.cur_animation][self.cur_frame]
-                if self.sight:
-                    self.image = pygame.transform.flip(self.image, 1, 0)
-                self.cur_frame += 1
-                if self.cur_frame >= len(self.animation_list[self.cur_animation]):
-                    self.cur_frame = 0
-                self.animation_cooldown = 0
-            else:
-                self.animation_cooldown += 0.12
-        except Exception:
-            self.cur_frame = 0
-
-    def deal_damage(self):  # Враг получил урон. Первая функция убирает одно хп, вторая - проверяет, мертв ли он
+    def deal_damage(self):
         self.base_health.received_hit()
-
         self.check_death_state()
 
-    def give_damage(self):  # Враг наносит удар с близкого расстояния (ближний бой) - 1 вариант атаки для данного типа
+    def give_damage(self):
         self.soul.given_hit()
 
         if self.soul.soul_state is True:
@@ -496,41 +472,35 @@ class Enemy(pygame.sprite.Sprite):
         else:
             self.hero.base_health.received_hit()
 
-    def is_dead(self):  # Геттер состояния смерти врага
+    def is_dead(self):
         return self.dead_cond
 
-    def death_condition_met(self):  # Функция, которая вызывается при положительной проверке на смерть (выбор,
-        # нужно ли что-либо дропать, также добавления очков и экспы игроку)
+    def death_condition_met(self):
         print('Enemy (type=Enemy) is dead.')
 
         should_drop_anything = None
 
         if randint(1, 10) == 1:
             should_drop_anything = True
-
         else:
             should_drop_anything = False
 
         if should_drop_anything:
             self.drop_items()
 
-        self.give_hero_score()
-
         print("Death of enemy validated. Deleting entity.")
-
+        self.kill()
         del self
 
-    def drop_items(self):  # Функция которая отвечает за дроп предмета из врага
-        item = None  # выберите рандомный айтем и присвойте его этой переменной
+    def drop_items(self):
+        item = None
 
-        # киньте этот айтем на поле и дайте игроку возможность его подобрать и пусть игрок его подбирает
-
-    def give_hero_score(self):  # Функция которая дает гг опыт и очки за победу над врагом
+    def give_hero_score(self):
         basic_value = randint(10, 25)
 
         self.hero.exp.add_score(basic_value)
 
-    def check_death_state(self):  # Функция, которая проверяет, жив ли враг
+    def check_death_state(self):
         hp = []
 
         for i in range(len(self.base_health.base_health)):
@@ -548,132 +518,71 @@ class Enemy(pygame.sprite.Sprite):
         else:
             print('Enemy is still alive.')
 
-    def move(self, moving_left, moving_right, jump, moving_down, dash):
-
+    def move(self): # нужен фикс взаимодействия
         # Расстояние, пройденное персонажем в один тик
         dx = 0
         dy = 0
-
-        if moving_left:
+        action = choice(['left', 'right'])
+        if action == 'left':
             dx = -STEP
             self.sight = 1
-        if moving_right:
+        elif action == 'right':
             dx = STEP
             self.sight = 0
-
-        # jump / double jump
-        global double_jump_unlock, double_jump_check
-        if (jump and not self.in_air) or (jump and double_jump_check and double_jump_unlock and self.in_air):
-            if self.jump_count <= 1:
-                self.jump_count += 1
-                self.fall_y = -11
-                double_jump_check = False
-
-        # dash
-        if dash and self.dash_cooldown and self.n_dash >= 1:
-            if self.sight:
-                self.dash_speed = -7
-            else:
-                self.dash_speed = 7
-            self.dash_cooldown = False
-            self.n_dash = 0
-        if self.n_dash < 1:
-            self.n_dash += 0.025
-
-        if self.dash_speed:
-            self.fall_y = 0
-            dx += STEP * self.dash_speed
-            if self.sight:
-                self.dash_speed += 1
-            else:
-                self.dash_speed -= 1
-
-        # check current animation
-        if dx == 0 and not self.in_air:
-            self.cur_animation = 0
-        if moving_left or moving_right:
-            self.cur_animation = 1
-        if self.in_air:
-            self.cur_animation = 3
-        if jump and not self.in_air:
-            self.cur_animation = 2
-        if self.dash_speed or self.n_dash <= 0.4:
-            self.cur_animation = 5
 
         # добавляем g (гравитацию)
         self.fall_y += GRAVITY
         if self.fall_y > 11:
             self.fall_y = 11
-
         dy += self.fall_y
+
+        # check current animation
+        if dx == 0 and not self.in_air:
+            self.cur_animation = 0
+        if dx < 0:
+            self.cur_animation = 1
+        if dx > 0:
+            self.cur_animation = 1
+        if self.in_air:
+            self.cur_animation = 3
+        if self.fall_y < 0:
+            self.cur_animation = 2
+        if self.fall_y > 0:
+            self.cur_animation = 3
 
         # смотрим коллайды по x
         self.rect.x += dx
-
         if pygame.sprite.spritecollideany(self, platform_group):
             if dy > 0:
                 self.rect.x -= dx
-
-        if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
-            self.rect.x -= dx
+            if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
+                self.rect.x -= dx
 
         # коллайд гг с мобом по x
-        if pygame.sprite.spritecollideany(self, enemy_group):
-            if self.dash_speed:
-                pass
-                # коллайд по х с дэшем, моб должен получить урон
-            else:
-                pass
-                # коллайд по х без дэша, гг получает урон
+        if pygame.sprite.spritecollideany(self, player_group):
+            self.base_health.received_hit()
 
         # смотрим коллайды по y
         self.rect.y += dy
-
         if pygame.sprite.spritecollideany(self, horizontal_borders):
-            pass  # гг выпал за рамки уровня, смерть
-
-        if pygame.sprite.spritecollideany(self, enemy_group):
-            self.fall_y = -11  # отскок от моба (как прыжок)
-            # гг прыгнул на голову моба, моб должен получить урон
-
-        if pygame.sprite.spritecollideany(self, ladder_group):
-            self.jump_count = 0
-            self.fall_y = 0
-            self.in_air = False
-            self.dash_cooldown = True
-            self.rect.y -= dy + 0.1
-            if not moving_down:
-                if jump:
-                    self.fall_y = -11
-                    self.rect.y -= STEP * 0.6
-                    self.cur_animation = 4
-                    if pygame.sprite.spritecollideany(self, wall_group):
-                        self.rect.y -= STEP * 0.6
-                else:
-                    self.cur_animation = 0
-            else:
-                self.rect.y += STEP * 0.6
-                self.cur_animation = 4
-                if pygame.sprite.spritecollideany(self, wall_group):
-                    self.rect.y -= STEP * 0.6
-
-        if pygame.sprite.spritecollideany(self, wall_group):
-            if dy < 0:
-                # персонаж стукается головой об стену
-                self.rect.y -= (dy + 0.1)
-                self.fall_y = 0
-            if dy > 0:
-                # коллайд с землей
+            for i in self.base_health.base_health:
+                if i == 1:
+                    self.base_health.received_hit()
+            if pygame.sprite.spritecollideany(self, enemy_group):
+                self.fall_y = -11  # отскок от моба (как прыжок)
+            if pygame.sprite.spritecollideany(self, ladder_group):
                 self.jump_count = 0
-                if not self.dash_speed:
-                    self.dash_cooldown = True
-                self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
                 self.in_air = False
+                self.dash_cooldown = True
+                self.rect.y -= dy + 0.1
+            if pygame.sprite.spritecollideany(self, wall_group):
+                self.rect.y -= dy + 0.1
+            else:
+                self.cur_animation = 0
         else:
-            if not pygame.sprite.spritecollideany(self, ladder_group) and not (pygame.sprite.spritecollideany(self, platform_group)):
-                self.in_air = True
-                self.platform_check = False
+            self.in_air = True
+            self.platform_check = False
 
         if pygame.sprite.spritecollideany(self, platform_group):
             flag = 0
@@ -682,17 +591,12 @@ class Enemy(pygame.sprite.Sprite):
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
                 self.jump_count = 0
-                if not self.dash_speed:
-                    self.dash_cooldown = True
                 flag = 1
             if not flag:
                 self.platform_check = True
-
-        if pygame.sprite.spritecollideany(self, trap_group) and self.dash_speed == 0:
+        if pygame.sprite.spritecollideany(self, trap_group):
             self.fall_y = -11  # отскок от шипа (как прыжок)
-            # Получение урона от шипа
-            # функционал работает мега криво и кринжово, надо что-то придумать
-
+            self.base_health.received_hit()
         if pygame.sprite.spritecollideany(self, exit_group):
             for i in all_sprites:
                 i.kill()
@@ -700,10 +604,23 @@ class Enemy(pygame.sprite.Sprite):
             level_count += 1
             player, item = generate_level(file_name2, level_count)
 
-        #print(self.in_air)
-        # print(self.fall_y)
-
         self.update()
+
+    def update(self):
+        # отрисовка спрайтов игрока
+        try:
+            if self.animation_cooldown >= 1:
+                self.image = self.animation_list[self.cur_animation][self.cur_frame]
+                if self.sight:
+                    self.image = pygame.transform.flip(self.image, 1, 0)
+                self.cur_frame += 1
+                if self.cur_frame >= len(self.animation_list[self.cur_animation]):
+                    self.cur_frame = 0
+                    self.animation_cooldown = 0
+            else:
+                self.animation_cooldown += 0.12
+        except Exception:
+            self.cur_frame = 0
 
 
 class Player(pygame.sprite.Sprite):
@@ -722,6 +639,7 @@ class Player(pygame.sprite.Sprite):
         self.cur_animation = 0
         self.cur_frame = 0
         self.animation_list = []
+        self.exp = Score()
         self.animation_cooldown = 0
         self.width = self.image.get_width()
         self.height = self.image.get_height()
@@ -880,18 +798,21 @@ class Player(pygame.sprite.Sprite):
                 pass
                 # коллайд по х с дэшем, моб должен получить урон
             else:
-                pass
-                # коллайд по х без дэша, гг получает урон
+                self.base_health.received_hit()
 
         # смотрим коллайды по y
         self.rect.y += dy
 
         if pygame.sprite.spritecollideany(self, horizontal_borders):
-            pass  # гг выпал за рамки уровня, смерть
+            for i in self.base_health.base_health:
+                if i == 1:
+                    self.received_hit()
 
         if pygame.sprite.spritecollideany(self, enemy_group):
-            self.fall_y = -11  # отскок от моба (как прыжок)
-            # гг прыгнул на голову моба, моб должен получить урон
+            self.fall_y = -11
+            victim = pygame.sprite.spritecollideany(self, enemy_group)
+            if victim and isinstance(victim, Tile) is False:
+                victim.deal_damage()
 
         if pygame.sprite.spritecollideany(self, ladder_group):
             self.jump_count = 0
@@ -1172,7 +1093,7 @@ class Health:
             self.base_health.append(1)
 
     def received_hit(self):
-        for i in range(len(self.base_health) - 1, 0, -1):
+        for i in range(len(self.base_health) - 1, -1, -1):
 
             if self.base_health[i] == 1:
 
@@ -1180,6 +1101,7 @@ class Health:
 
                 if set(self.base_health) == {0}:
                     print("Hero is dead.")
+                    player.kill()
 
                 break
         else:
@@ -1248,9 +1170,10 @@ class Camera:
 
         self.camera = pygame.Rect(x, y, WIDTH, HEIGHT)
 
+enemies = []
 
 def generate_level(filename, LEVEL_COUNT):
-    global map
+    global map, all_sprites
     try:
         if LEVEL_COUNT == 0:
             SCALE, scale_player, item_type = 6, 1.7, 2
@@ -1286,13 +1209,17 @@ def generate_level(filename, LEVEL_COUNT):
                             for _ in range(randint(1, 7)):
                                 mini_boss = MiniBoss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2.2) # подправьте пж,
                                 # не шарю за корды
-                                enemies.append(mini_boss)
+                                mini_boss_group.add(mini_boss)
                             temp.add(mini_boss_group)
                         if layer == 5:
-                            for _ in range(randint(10, 20)):
-                                enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2.2) # подправьте пж,
-                                # не шарю за корды
-                                enemies.append(enemy)
+                            enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 1.5) # подправьте пж,
+                            # не шарю за корды
+                            enemy_group.add(enemy)
+                            enemies.append(enemy)
+                            enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 1.5)  # подправьте пж,
+                            # не шарю за корды
+                            enemy_group.add(enemy)
+                            enemies.append(enemy)
                             temp.add(enemy_group)
                         if layer == 4:
                             temp.add(trap_group)
@@ -1413,6 +1340,9 @@ if __name__ == '__main__':
         for sprite in all_sprites:
             screen.blit(sprite.image, camera.apply(sprite))
         hpBar.update(player)
+        for enemy in enemies:
+            if randint(1, 1000) < 100:
+                enemy.move()
         # Обновление экрана
         pygame.display.flip()
         clock.tick(FPS)
