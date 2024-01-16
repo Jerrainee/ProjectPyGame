@@ -77,19 +77,19 @@ mini_boss_image = load_image('data/images/entities/mini_boss/mini_boss.png', -1)
 dash_image = load_image('data/images/items/key/0.png', -1)
 
 play_pause_button = pygame.sprite.Sprite(pause_buttons_group)
-play_pause_button.image = load_image('data/images/interface/pause/play_button.png',  -1)
+play_pause_button.image = load_image('data/images/interface/pause/play_button.png', -1)
 play_pause_button.rect = play_pause_button.image.get_rect()
 play_pause_button.rect.x = WIDTH // 2 - play_pause_button.image.get_width() - 20
 play_pause_button.rect.y = HEIGHT // 2 - play_pause_button.image.get_height() // 2
 menu_pause_button = pygame.sprite.Sprite(pause_buttons_group)
-menu_pause_button.image = load_image('data/images/interface/pause/menu_button.png',  -1)
+menu_pause_button.image = load_image('data/images/interface/pause/menu_button.png', -1)
 menu_pause_button.rect = menu_pause_button.image.get_rect()
 menu_pause_button.rect.x = WIDTH // 2 + menu_pause_button.image.get_width() + 20
 menu_pause_button.rect.y = HEIGHT // 2 - menu_pause_button.image.get_height() // 2
 
 background_menu_image = load_image('data/images/interface/menu/background.png')
 start_menu_button = pygame.sprite.Sprite(menu_sprite_group)
-start_menu_button.image = load_image('data/images/interface/menu/start_button.png',  -1)
+start_menu_button.image = load_image('data/images/interface/menu/start_button.png', -1)
 start_menu_button.rect = start_menu_button.image.get_rect()
 start_menu_button.rect.x = WIDTH // 2 - start_menu_button.image.get_width() // 2
 start_menu_button.rect.y = HEIGHT // 2 - start_menu_button.image.get_height() // 2
@@ -518,7 +518,7 @@ class Enemy(pygame.sprite.Sprite):
         else:
             print('Enemy is still alive.')
 
-    def move(self): # нужен фикс взаимодействия
+    def move(self):  # нужен фикс взаимодействия
         # Расстояние, пройденное персонажем в один тик
         dx = 0
         dy = 0
@@ -537,52 +537,48 @@ class Enemy(pygame.sprite.Sprite):
         dy += self.fall_y
 
         # check current animation
-        if dx == 0 and not self.in_air:
+        if dx == 0:
             self.cur_animation = 0
         if dx < 0:
             self.cur_animation = 1
         if dx > 0:
-            self.cur_animation = 1
-        if self.in_air:
-            self.cur_animation = 3
-        if self.fall_y < 0:
             self.cur_animation = 2
-        if self.fall_y > 0:
-            self.cur_animation = 3
 
         # смотрим коллайды по x
         self.rect.x += dx
         if pygame.sprite.spritecollideany(self, platform_group):
             if dy > 0:
                 self.rect.x -= dx
-            if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
-                self.rect.x -= dx
+        if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
+            self.rect.x -= dx
 
-        # коллайд гг с мобом по x
         if pygame.sprite.spritecollideany(self, player_group):
             self.base_health.received_hit()
 
         # смотрим коллайды по y
         self.rect.y += dy
+
         if pygame.sprite.spritecollideany(self, horizontal_borders):
             for i in self.base_health.base_health:
                 if i == 1:
                     self.base_health.received_hit()
-            if pygame.sprite.spritecollideany(self, enemy_group):
-                self.fall_y = -11  # отскок от моба (как прыжок)
-            if pygame.sprite.spritecollideany(self, ladder_group):
+
+        if pygame.sprite.spritecollideany(self, wall_group):
+            if dy < 0:
+                # персонаж стукается головой об стену
+                self.rect.y -= (dy + 0.1)
+                self.fall_y = 0
+            if dy > 0:
+                # коллайд с землей
                 self.jump_count = 0
+                self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
                 self.in_air = False
-                self.dash_cooldown = True
-                self.rect.y -= dy + 0.1
-            if pygame.sprite.spritecollideany(self, wall_group):
-                self.rect.y -= dy + 0.1
-            else:
-                self.cur_animation = 0
         else:
-            self.in_air = True
-            self.platform_check = False
+            if not pygame.sprite.spritecollideany(self, ladder_group) and not (
+            pygame.sprite.spritecollideany(self, platform_group)):
+                self.in_air = True
+                self.platform_check = False
 
         if pygame.sprite.spritecollideany(self, platform_group):
             flag = 0
@@ -594,20 +590,15 @@ class Enemy(pygame.sprite.Sprite):
                 flag = 1
             if not flag:
                 self.platform_check = True
+
         if pygame.sprite.spritecollideany(self, trap_group):
             self.fall_y = -11  # отскок от шипа (как прыжок)
             self.base_health.received_hit()
-        if pygame.sprite.spritecollideany(self, exit_group):
-            for i in all_sprites:
-                i.kill()
-            global player, item, level_count
-            level_count += 1
-            player, item = generate_level(file_name2, level_count)
 
         self.update()
 
     def update(self):
-        # отрисовка спрайтов игрока
+        # отрисовка спрайтов моба
         try:
             if self.animation_cooldown >= 1:
                 self.image = self.animation_list[self.cur_animation][self.cur_frame]
@@ -849,7 +840,8 @@ class Player(pygame.sprite.Sprite):
                 self.fall_y = 0
                 self.in_air = False
         else:
-            if not pygame.sprite.spritecollideany(self, ladder_group) and not (pygame.sprite.spritecollideany(self, platform_group)):
+            if not pygame.sprite.spritecollideany(self, ladder_group) and not (
+            pygame.sprite.spritecollideany(self, platform_group)):
                 self.in_air = True
                 self.platform_check = False
 
@@ -868,7 +860,7 @@ class Player(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollideany(self, trap_group) and self.dash_speed == 0:
             self.fall_y = -11  # отскок от шипа (как прыжок)
-            # Получение урона от шипа
+            self.base_health.received_hit()
             # функционал работает мега криво и кринжово, надо что-то придумать
 
         if pygame.sprite.spritecollideany(self, exit_group):
@@ -878,7 +870,7 @@ class Player(pygame.sprite.Sprite):
             level_count += 1
             player, item = generate_level(file_name2, level_count)
 
-        #print(self.in_air)
+        # print(self.in_air)
         # print(self.fall_y)
 
         self.update()
@@ -1000,28 +992,15 @@ class HealthBar(pygame.sprite.Sprite):
     def update(self, target):
         self.cur_hp = player.base_health.base_health
         for i in range(len(self.cur_hp)):
-            if self.cur_hp[i] == 0:
-                self.cur_animation = 0
-            if self.cur_hp[i] == 1:
-                self.cur_animation = 1
-            try:
-                if self.animation_cooldown >= 1:
-                    self.image = self.animation_list[self.cur_animation][self.cur_frame]
-                    self.cur_frame += 1
-                    if self.cur_frame >= len(self.animation_list):
-                        self.cur_frame = 0
-                    self.animation_cooldown = 0
-                else:
-                    self.animation_cooldown += 0.12
-
-            except Exception:
-                self.cur_frame = 0
+            self.image = self.animation_list[self.cur_hp[i]][0]
 
             self.rect = self.image.get_rect()
             screen.blit(self.image, (-15 + 64 * i, -15))
 
+            # без анимаций получения урона и хилла(((
 
-class Item(pygame.sprite.Sprite):
+
+class WorldItem(pygame.sprite.Sprite):
     def __init__(self, item_type, pos_x, pos_y, scale):
         super().__init__(item_group, all_sprites)
         self.item_type = item_type
@@ -1040,7 +1019,6 @@ class Item(pygame.sprite.Sprite):
                                              (int(img.get_width() * self.scale), int(img.get_height() * self.scale)))
                 cur_animations_lst.append(img)
             self.animation_list_items.append(cur_animations_lst)
-        print(self.animation_list_items)
 
         self.image = self.animation_list_items[self.item_type][self.cur_frame]
         self.rect = self.image.get_rect()
@@ -1101,11 +1079,9 @@ class Health:
 
                 if set(self.base_health) == {0}:
                     print("Hero is dead.")
-                    player.kill()
+                #    player.kill()
 
                 break
-        else:
-            print("Hero is dead.")
 
     def restore_health(self, hero):
         if hero.soul.soul_state or 'heal' in hero.items:  # надо добавить айтемы в игру!!!!
@@ -1170,7 +1146,9 @@ class Camera:
 
         self.camera = pygame.Rect(x, y, WIDTH, HEIGHT)
 
+
 enemies = []
+
 
 def generate_level(filename, LEVEL_COUNT):
     global map, all_sprites
@@ -1198,21 +1176,22 @@ def generate_level(filename, LEVEL_COUNT):
                             new_player = Player((x * tile_size * SCALE), (y * tile_size * SCALE), scale_player)
                         if layer == 10:
                             temp.add(treasure_group)
-                            new_items.append(Item(0, (x * 8 * SCALE - 5), (y * 8 * SCALE - 5), 2.2))
+                            new_items.append(WorldItem(0, (x * 8 * SCALE - 5), (y * 8 * SCALE - 5), 2.2))
                         if layer == 9:
-                            new_items.append(Item(1, (x * 8 * SCALE), (y * 8 * SCALE) - 50, 1))
+                            new_items.append(WorldItem(1, (x * 8 * SCALE), (y * 8 * SCALE) - 50, 1))
                         if layer == 8:
-                            new_items.append(Item(item_type, (x * 8 * SCALE + 5), (y * 8 * SCALE) - 70, 4.5))
+                            new_items.append(WorldItem(item_type, (x * 8 * SCALE + 5), (y * 8 * SCALE) - 70, 4.5))
                         if layer == 7:
                             temp.add(exit_group)
                         if layer == 6:
                             for _ in range(randint(1, 7)):
-                                mini_boss = MiniBoss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2.2) # подправьте пж,
+                                mini_boss = MiniBoss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55,
+                                                     2.2)  # подправьте пж,
                                 # не шарю за корды
                                 mini_boss_group.add(mini_boss)
                             temp.add(mini_boss_group)
                         if layer == 5:
-                            enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 1.5) # подправьте пж,
+                            enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 1.5)  # подправьте пж,
                             # не шарю за корды
                             enemy_group.add(enemy)
                             enemies.append(enemy)
@@ -1236,7 +1215,6 @@ def generate_level(filename, LEVEL_COUNT):
         return new_player, new_items
     except Exception as f:
         print(f)
-
 
 
 if __name__ == '__main__':
@@ -1273,7 +1251,6 @@ if __name__ == '__main__':
                     surf.set_alpha(100)
                     pause_buttons_group.draw(screen)
                     screen.blit(surf, (0, 0))
-
 
                     for event in pygame.event.get():
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
