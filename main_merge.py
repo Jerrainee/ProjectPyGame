@@ -429,6 +429,8 @@ class Enemy(pygame.sprite.Sprite):
         self.fall_y = 0
         self.in_air = False
         self.sight = 0
+        self.attack_cooldown = 1
+        self.dash_speed = 0
         self.cur_animation = 0
         self.cur_frame = 0
         self.animation_list = []
@@ -438,8 +440,6 @@ class Enemy(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.image, (self.width * self.scale, self.height * self.scale))
         self.rect = self.image.get_rect().move(
             pos_x, pos_y)
-        self.attack_rect = pygame.Rect(0, 0, self.width * 3,  self.height)
-        self.attack_rect.move(pos_x, pos_y)
         self.base_health = Health(3)
         self.soul = Soul(0.1)
         self.dead_cond = False
@@ -526,10 +526,10 @@ class Enemy(pygame.sprite.Sprite):
         dx = 0
         dy = 0
         action = choice(['left', 'right'])
-        if action == 'left':
+        if action == 'left' and not self.dash_speed:
             dx = -STEP
             self.sight = 1
-        elif action == 'right':
+        elif action == 'right' and not self.dash_speed:
             dx = STEP
             self.sight = 0
 
@@ -540,11 +540,24 @@ class Enemy(pygame.sprite.Sprite):
             self.fall_y = 11
         dy += self.fall_y
 
+        if self.dash_speed:
+            self.fall_y = 0
+            dx += 3 * self.dash_speed
+            if self.sight:
+                self.dash_speed += 0.5
+            else:
+                self.dash_speed -= 0.5
+
+            print(self.dash_speed)
+
         # check current animation
         if dx == 0:
             self.cur_animation = 0
         if dx != 0 and not self.in_air:
             self.cur_animation = 1
+        if self.dash_speed or self.attack_cooldown < 0.5:
+            self.cur_animation = 2
+            # в этом состоянии моб должен бить гг
 
         # смотрим коллайды по x
         self.rect.x += dx
@@ -554,8 +567,16 @@ class Enemy(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
             self.rect.x -= dx
 
-    #    if self.attack_rect.colliderect(self.hero.rect):
-     #       print(1)
+        rect_l = pygame.Rect(self.rect[0] - self.width * 5, self.rect[1], self.width * 5, self.height)
+        rect_r = pygame.Rect(self.rect[0] + self.width * 5, self.rect[1], self.width * 5, self.height)
+        if self.hero.rect.colliderect(rect_l) and self.attack_cooldown >= 1:
+            print('Моб атакует по левой стороне')
+            self.in_attack = True
+            self.attack_dash(1)
+        if self.hero.rect.colliderect(rect_r) and self.attack_cooldown >= 1:
+            print('Моб атакует по правой стороне')
+            self.in_attack = True
+            self.attack_dash(0)
 
 
         if pygame.sprite.spritecollideany(self, player_group):
@@ -601,10 +622,9 @@ class Enemy(pygame.sprite.Sprite):
             self.fall_y = -11  # отскок от шипа (как прыжок)
             self.base_health.received_hit()
 
-        if self.attack_rect.colliderect(self.hero.rect):
-            print(1)
-
-        self.attack_rect.move(self.rect.x, self.rect.y)
+        if self.attack_cooldown < 1:
+            self.attack_cooldown += 0.03
+            print(self.attack_cooldown)
 
         self.update()
 
@@ -620,9 +640,24 @@ class Enemy(pygame.sprite.Sprite):
                     self.cur_frame = 0
                     self.animation_cooldown = 0
             else:
-                self.animation_cooldown += 0.12
+                if self.cur_animation == 2:
+                    self.animation_cooldown += 0.25
+                else:
+                    self.animation_cooldown += 0.18
+
         except Exception:
             self.cur_frame = 0
+
+    def attack_dash(self, n):
+        self.attack_cooldown = 0
+        self.dash_speed = 0
+        if n:
+            self.dash_speed = -7
+            self.sight = 1
+        else:
+            self.dash_speed = 7
+            self.sight = 0
+
 
 
 class Player(pygame.sprite.Sprite):
@@ -801,7 +836,8 @@ class Player(pygame.sprite.Sprite):
                 pass
                 # коллайд по х с дэшем, моб должен получить урон
             else:
-                self.base_health.received_hit()
+            #    self.base_health.received_hit()
+                pass
 
         # смотрим коллайды по y
         self.rect.y += dy
@@ -1046,6 +1082,7 @@ class WorldItem(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, player_group):
             if self.item_lst[self.item_type] == 'dash':
                 dash_unlock = True
+                print(111)
                 self.kill()
             if self.item_lst[self.item_type] == 'double_jump':
                 double_jump_unlock = True
@@ -1198,16 +1235,12 @@ def generate_level(filename, LEVEL_COUNT):
                         if layer == 12:
                             for _ in range(randint(1, 7)):
                                 mini_boss = MiniBoss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55,
-                                                     2.2)  # подправьте пж,
+                                                     7)  # подправьте пж,
                                 # не шарю за корды
-                                mini_boss_group.add(mini_boss)
-                            temp.add(mini_boss_group)
                         if layer == 11:
-                            enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 1.5)  # подправьте пж,
+                            enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2)  # подправьте пж,
                             # не шарю за корды
-                            enemy_group.add(enemy)
                             enemies.append(enemy)
-                            temp.add(enemy_group)
                         if layer == 4:
                             temp.add(trap_group)
                         if layer == 3:
