@@ -445,6 +445,7 @@ class Enemy(pygame.sprite.Sprite):
         self.dead_cond = False
         self.hero = hero
         self.attack_buff = False
+        self.cd = 0
         animation_types = ['idle', 'run', 'attack']
         for animation in animation_types:
             cur_animations_lst = []
