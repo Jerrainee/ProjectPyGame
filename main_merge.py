@@ -48,6 +48,7 @@ border_group = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
 treasure_group = pygame.sprite.Group()
+enemy_attack_group = pygame.sprite.Group()
 
 pause_buttons_group = pygame.sprite.Group()
 menu_sprite_group = pygame.sprite.Group()
@@ -422,7 +423,7 @@ class MiniBoss(pygame.sprite.Sprite):
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, hero, pos_x, pos_y, scale):
-        super().__init__(enemy_group, all_sprites)
+        super().__init__(enemy_group, enemy_attack_group, all_sprites)
         self.image = enemy_image
         self.scale = scale
         self.fall_y = 0
@@ -437,6 +438,8 @@ class Enemy(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.image, (self.width * self.scale, self.height * self.scale))
         self.rect = self.image.get_rect().move(
             pos_x, pos_y)
+        self.attack_rect = pygame.Rect(0, 0, self.width * 3,  self.height)
+        self.attack_rect.move(pos_x, pos_y)
         self.base_health = Health(3)
         self.soul = Soul(0.1)
         self.dead_cond = False
@@ -499,6 +502,7 @@ class Enemy(pygame.sprite.Sprite):
         basic_value = randint(10, 25)
 
         self.hero.exp.add_score(basic_value)
+        print(2)
 
     def check_death_state(self):
         hp = []
@@ -518,8 +522,7 @@ class Enemy(pygame.sprite.Sprite):
         else:
             print('Enemy is still alive.')
 
-    def move(self):  # нужен фикс взаимодействия
-        # Расстояние, пройденное персонажем в один тик
+    def move(self):
         dx = 0
         dy = 0
         action = choice(['left', 'right'])
@@ -530,6 +533,7 @@ class Enemy(pygame.sprite.Sprite):
             dx = STEP
             self.sight = 0
 
+
         # добавляем g (гравитацию)
         self.fall_y += GRAVITY
         if self.fall_y > 11:
@@ -539,10 +543,8 @@ class Enemy(pygame.sprite.Sprite):
         # check current animation
         if dx == 0:
             self.cur_animation = 0
-        if dx < 0:
+        if dx != 0 and not self.in_air:
             self.cur_animation = 1
-        if dx > 0:
-            self.cur_animation = 2
 
         # смотрим коллайды по x
         self.rect.x += dx
@@ -551,6 +553,10 @@ class Enemy(pygame.sprite.Sprite):
                 self.rect.x -= dx
         if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
             self.rect.x -= dx
+
+    #    if self.attack_rect.colliderect(self.hero.rect):
+     #       print(1)
+
 
         if pygame.sprite.spritecollideany(self, player_group):
             self.base_health.received_hit()
@@ -594,6 +600,11 @@ class Enemy(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, trap_group):
             self.fall_y = -11  # отскок от шипа (как прыжок)
             self.base_health.received_hit()
+
+        if self.attack_rect.colliderect(self.hero.rect):
+            print(1)
+
+        self.attack_rect.move(self.rect.x, self.rect.y)
 
         self.update()
 
@@ -782,6 +793,7 @@ class Player(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
             self.rect.x -= dx
+
 
         # коллайд гг с мобом по x
         if pygame.sprite.spritecollideany(self, enemy_group):
@@ -1172,29 +1184,25 @@ def generate_level(filename, LEVEL_COUNT):
                         temp = Tile(pygame.transform.scale(image, (tile_size * SCALE, tile_size * SCALE)),
                                     x * tile_size * SCALE,
                                     y * tile_size * SCALE, int(tile_size * SCALE), int(tile_size * SCALE), layer)
-                        if layer == 12:
-                            new_player = Player((x * tile_size * SCALE), (y * tile_size * SCALE), scale_player)
                         if layer == 10:
+                            new_player = Player((x * tile_size * SCALE), (y * tile_size * SCALE), scale_player)
+                        if layer == 8:
                             temp.add(treasure_group)
                             new_items.append(WorldItem(0, (x * 8 * SCALE - 5), (y * 8 * SCALE - 5), 2.2))
-                        if layer == 9:
-                            new_items.append(WorldItem(1, (x * 8 * SCALE), (y * 8 * SCALE) - 50, 1))
-                        if layer == 8:
-                            new_items.append(WorldItem(item_type, (x * 8 * SCALE + 5), (y * 8 * SCALE) - 70, 4.5))
                         if layer == 7:
-                            temp.add(exit_group)
+                            new_items.append(WorldItem(1, (x * 8 * SCALE), (y * 8 * SCALE) - 50, 1))
                         if layer == 6:
+                            new_items.append(WorldItem(item_type, (x * 8 * SCALE + 5), (y * 8 * SCALE) - 70, 4.5))
+                        if layer == 5:
+                            temp.add(exit_group)
+                        if layer == 12:
                             for _ in range(randint(1, 7)):
                                 mini_boss = MiniBoss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55,
                                                      2.2)  # подправьте пж,
                                 # не шарю за корды
                                 mini_boss_group.add(mini_boss)
                             temp.add(mini_boss_group)
-                        if layer == 5:
-                            enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 1.5)  # подправьте пж,
-                            # не шарю за корды
-                            enemy_group.add(enemy)
-                            enemies.append(enemy)
+                        if layer == 11:
                             enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 1.5)  # подправьте пж,
                             # не шарю за корды
                             enemy_group.add(enemy)
@@ -1234,6 +1242,7 @@ if __name__ == '__main__':
                     if start_menu_button.rect.collidepoint(event.pos):
                         menu = False
                         player, items = generate_level(file_name1, level_count)
+                        print(player)
                         hpBar = HealthBar(player)
             pygame.display.flip()
         screen.fill(pygame.Color("black"))
