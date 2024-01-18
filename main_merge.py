@@ -429,6 +429,7 @@ class Enemy(pygame.sprite.Sprite):
         self.fall_y = 0
         self.in_air = False
         self.sight = 0
+        self.moving = 'left'
         self.attack_cooldown = 1
         self.dash_speed = 0
         self.cur_animation = 0
@@ -445,7 +446,6 @@ class Enemy(pygame.sprite.Sprite):
         self.dead_cond = False
         self.hero = hero
         self.attack_buff = False
-        self.cd = 0
         animation_types = ['idle', 'run', 'attack']
         for animation in animation_types:
             cur_animations_lst = []
@@ -526,12 +526,13 @@ class Enemy(pygame.sprite.Sprite):
     def move(self):
         dx = 0
         dy = 0
-        action = choice(['left', 'right'])
-        if action == 'left' and not self.dash_speed:
-            dx = -STEP
+        if randint(1, 20) == 1:
+            self.moving = choice(['left', 'right'])
+        if self.moving == 'left' and not self.dash_speed:
+            dx = -STEP * 0.5
             self.sight = 1
-        elif action == 'right' and not self.dash_speed:
-            dx = STEP
+        elif self.moving == 'right' and not self.dash_speed:
+            dx = STEP * 0.5
             self.sight = 0
 
 
@@ -543,16 +544,16 @@ class Enemy(pygame.sprite.Sprite):
 
         if self.dash_speed:
             self.fall_y = 0
-            dx += 3 * self.dash_speed
+            dx += 5 * self.dash_speed
             if self.sight:
-                self.dash_speed += 0.5
+                self.dash_speed += 1
             else:
-                self.dash_speed -= 0.5
+                self.dash_speed -= 1
 
             print(self.dash_speed)
 
         # check current animation
-        if dx == 0:
+        if self.in_air:
             self.cur_animation = 0
         if dx != 0 and not self.in_air:
             self.cur_animation = 1
@@ -570,14 +571,18 @@ class Enemy(pygame.sprite.Sprite):
 
         rect_l = pygame.Rect(self.rect[0] - self.width * 5, self.rect[1], self.width * 5, self.height)
         rect_r = pygame.Rect(self.rect[0] + self.width * 5, self.rect[1], self.width * 5, self.height)
+        screen.fill(pygame.Color('red'), rect_r)
+       # screen.blit(self)
         if self.hero.rect.colliderect(rect_l) and self.attack_cooldown >= 1:
             print('Моб атакует по левой стороне')
             self.in_attack = True
-            self.attack_dash(1)
+            self.sight = 1
+            self.attack_dash(-1)
         if self.hero.rect.colliderect(rect_r) and self.attack_cooldown >= 1:
             print('Моб атакует по правой стороне')
             self.in_attack = True
-            self.attack_dash(0)
+            self.sight = 0
+            self.attack_dash(1)
 
 
         if pygame.sprite.spritecollideany(self, player_group):
@@ -607,6 +612,8 @@ class Enemy(pygame.sprite.Sprite):
             pygame.sprite.spritecollideany(self, platform_group)):
                 self.in_air = True
                 self.platform_check = False
+             #   self.rect.y -= (dy + 0.1)
+            #    self.rect.x -= dx
 
         if pygame.sprite.spritecollideany(self, platform_group):
             flag = 0
@@ -625,7 +632,7 @@ class Enemy(pygame.sprite.Sprite):
 
         if self.attack_cooldown < 1:
             self.attack_cooldown += 0.03
-            print(self.attack_cooldown)
+        #    print(self.attack_cooldown)
 
         self.update()
 
@@ -642,22 +649,16 @@ class Enemy(pygame.sprite.Sprite):
                     self.animation_cooldown = 0
             else:
                 if self.cur_animation == 2:
-                    self.animation_cooldown += 0.25
+                    self.animation_cooldown += 0.2
                 else:
-                    self.animation_cooldown += 0.18
+                    self.animation_cooldown += 0.1
 
         except Exception:
             self.cur_frame = 0
 
     def attack_dash(self, n):
         self.attack_cooldown = 0
-        self.dash_speed = 0
-        if n:
-            self.dash_speed = -7
-            self.sight = 1
-        else:
-            self.dash_speed = 7
-            self.sight = 0
+        self.dash_speed = 7 * n
 
 
 
@@ -1073,9 +1074,14 @@ class WorldItem(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect = self.image.get_rect().move(
             pos_x, pos_y)
+      #  setattr(self.rect, item_group)
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         pygame.transform.scale(self.image, (self.width // 2, self.height // 2))
+
+      #  setattr(self.rect, 'topleft', (pos_x, pos_y))
+      #  self.rect_sprite = self.image
+
 
     def update(self):
         # функционал (гг находится рядом с предметом)
@@ -1085,6 +1091,7 @@ class WorldItem(pygame.sprite.Sprite):
                 dash_unlock = True
                 print(111)
                 self.kill()
+               # self.rect = pygame.Rect(0, 0, 0, 0)
             if self.item_lst[self.item_type] == 'double_jump':
                 double_jump_unlock = True
                 self.kill()
@@ -1361,8 +1368,7 @@ if __name__ == '__main__':
             screen.blit(sprite.image, camera.apply(sprite))
         hpBar.update(player)
         for enemy in enemies:
-            if randint(1, 1000) < 100:
-                enemy.move()
+            enemy.move()
         # Обновление экрана
         pygame.display.flip()
         clock.tick(FPS)
