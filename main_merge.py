@@ -456,6 +456,7 @@ class Enemy(pygame.sprite.Sprite):
     def deal_damage(self):
         self.base_health.received_hit()
         self.check_death_state()
+        print(self.hero)
 
     def give_damage(self):
         self.soul.given_hit()
@@ -576,7 +577,7 @@ class Enemy(pygame.sprite.Sprite):
                 self.in_air = False
         else:
             if not pygame.sprite.spritecollideany(self, ladder_group) and not (
-            pygame.sprite.spritecollideany(self, platform_group)):
+                    pygame.sprite.spritecollideany(self, platform_group)):
                 self.in_air = True
                 self.platform_check = False
 
@@ -630,6 +631,7 @@ class Player(pygame.sprite.Sprite):
         self.cur_animation = 0
         self.cur_frame = 0
         self.animation_list = []
+        self.item_cd = 0
         self.exp = Score()
         self.animation_cooldown = 0
         self.width = self.image.get_width()
@@ -658,13 +660,7 @@ class Player(pygame.sprite.Sprite):
     #   print(self.animation_list)
 
     def used_medical_item(self, item):
-        item_name = item.name
-
-        if item_name == 'heal':
-            self.base_health.restore_health(self)
-
-        elif item_name == 'hp':
-            self.base_health.add_health()
+        self.base_health.restore_health(self)
 
         item_id = item.id
 
@@ -696,6 +692,7 @@ class Player(pygame.sprite.Sprite):
         print("Can't use misc items.")
 
     def picked_up_item(self, item):
+        print('I picked up item')
         if item.type == 'medical':
             self.items['medical'].append(item)
 
@@ -713,6 +710,7 @@ class Player(pygame.sprite.Sprite):
 
         else:
             self.items['misc'].append(item)
+        print(self.items)
 
     def move(self, moving_left, moving_right, jump, moving_down, dash):
 
@@ -841,7 +839,7 @@ class Player(pygame.sprite.Sprite):
                 self.in_air = False
         else:
             if not pygame.sprite.spritecollideany(self, ladder_group) and not (
-            pygame.sprite.spritecollideany(self, platform_group)):
+                    pygame.sprite.spritecollideany(self, platform_group)):
                 self.in_air = True
                 self.platform_check = False
 
@@ -949,24 +947,34 @@ class Player(pygame.sprite.Sprite):
 
         self.items['attack'].pop(index)
 
-    def used_key(self):
+    def update_cd(self):
+        self.item_cd += 1
+
+    def used_key(self, key):
         global push_event
-        key = False  # проверка на ключ
-        if key and push_event:
+        self.update_cd()
+        print('sa')
+        if key and push_event and self.item_cd == 1:
             self.items['key'].pop()
             # открытие сундука, поздравление игрока
+            print('g')
             push_event = False
             return True
 
         else:
+            print(key, push_event, self.item_cd)
             print("Can't use key here. There are no chests nearby.")
             return None
+
+    def can_use_key(self):
+        return True if len(self.items['key']) != 0 else False
 
 
 class HealthBar(pygame.sprite.Sprite):
     def __init__(self, player):
         super().__init__(all_sprites)
         self.image = pygame.image.load('./data/images/interface/healthbar/hp_active/0.png')
+        self.id = randint(100000, 1000000)
         self.player = player
         self.cur_hp = player.base_health.base_health
         self.scale = 2
@@ -1000,16 +1008,30 @@ class HealthBar(pygame.sprite.Sprite):
             # без анимаций получения урона и хилла(((
 
 
+new_item = None
+'''player.used_key(res)
+                    push_event = False
+                    # Replace the treasure chest with a new item
+                    item_choice = choice([-1, -2, -3, -4])
+                    global new_item
+                    new_item = WorldItem(item_choice, self.pos_x, self.pos_y, self.scale)
+                    item_group.add(new_item)
+                    self.kill()'''
+
+
 class WorldItem(pygame.sprite.Sprite):
     def __init__(self, item_type, pos_x, pos_y, scale):
         super().__init__(item_group, all_sprites)
         self.item_type = item_type
         self.scale = scale
-        self.item_lst = ['treasure', 'key', 'dash', 'double_jump']
+        self.item_lst = ['treasure', 'key', 'dash', 'double_jump', 'defence_item', 'medical_item', 'soul_item']
         self.animation_list_items = []
         self.cur_frame = 0
         self.animation_cooldown = 0
-
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+        self.scale = scale
+        self.type = ""
         for animation in self.item_lst:
             cur_animations_lst = []
             n = len(os.listdir(f'./data/images/items/{animation}'))
@@ -1030,21 +1052,44 @@ class WorldItem(pygame.sprite.Sprite):
 
     def update(self):
         # функционал (гг находится рядом с предметом)
-        global dash_unlock, double_jump_unlock
+        global dash_unlock, double_jump_unlock, player
         if pygame.sprite.spritecollideany(self, player_group):
-            if self.item_lst[self.item_type] == 'dash':
+            if self.item_lst[self.item_type] == 'dash' and self in item_group:
                 dash_unlock = True
                 self.kill()
-            if self.item_lst[self.item_type] == 'double_jump':
+            if self.item_lst[self.item_type] == 'double_jump' and self in item_group:
                 double_jump_unlock = True
                 self.kill()
-            if self.item_lst[self.item_type] == 'key':
+            if self.item_lst[self.item_type] == 'key' and self in item_group:
                 # добавление ключа в инвентарь
+                self.type = 'key'
+                player.picked_up_item(self)
                 self.kill()
-            if self.item_lst[self.item_type] == 'treasure':
+            if self.item_lst[self.item_type] == 'medical_item' and self in item_group:
+                self.type = 'medical'
+                player.picked_up_item(self)
+                self.kill()
+            if self.item_lst[self.item_type] == 'defence_item' and self in item_group:
+                self.type = 'defense'
+                player.picked_up_item(self)
+                self.kill()
+            if self.item_lst[self.item_type] == 'soul_item' and self in item_group:
+                self.type = 'soul'
+                player.picked_up_item(self)
+                self.kill()
+            if self.item_lst[self.item_type] == 'treasure' and self in item_group:
+                global push_event
+                push_event = True
+                res = player.can_use_key()
                 # коллайд с сундуком, вызов функции открытия
-                if Player.used_key:  # функцию кста надо переписать
+                if res is True:
+                    player.used_key(res)  # игрок открыл сундук
+                    d = {-1: 'medical', -2: 'defense', -3: 'soul', -4: 'double_jump'}
+                    self.type = d[choice([-1, -2, -3, -4])]  # игроку выпал рандомный айтем и
+                    # он моментально его подобрал (он не увидит что за айтем, пока не откроет инвентарь)
+                    player.picked_up_item(self)  # игрок подобрал айтем
                     self.kill()
+                    return
 
         # анимации айтемов на уровне
         try:
@@ -1324,4 +1369,3 @@ if __name__ == '__main__':
         pygame.display.flip()
         clock.tick(FPS)
 terminate()
-
