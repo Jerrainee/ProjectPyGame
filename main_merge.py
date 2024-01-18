@@ -526,13 +526,13 @@ class Enemy(pygame.sprite.Sprite):
     def move(self):
         dx = 0
         dy = 0
-        if randint(1, 20) == 1:
+        if randint(1, 25) == 1:
             self.moving = choice(['left', 'right'])
         if self.moving == 'left' and not self.dash_speed:
-            dx = -STEP * 0.5
+         #   dx = -STEP * 0.5
             self.sight = 1
         elif self.moving == 'right' and not self.dash_speed:
-            dx = STEP * 0.5
+          #  dx = STEP * 0.5
             self.sight = 0
 
 
@@ -544,22 +544,22 @@ class Enemy(pygame.sprite.Sprite):
 
         if self.dash_speed:
             self.fall_y = 0
-            dx += 5 * self.dash_speed
+            dx += 2 * self.dash_speed
             if self.sight:
-                self.dash_speed += 1
+                self.dash_speed += 0.5
             else:
-                self.dash_speed -= 1
+                self.dash_speed -= 0.5
 
             print(self.dash_speed)
 
         # check current animation
-        if self.in_air:
-            self.cur_animation = 0
         if dx != 0 and not self.in_air:
             self.cur_animation = 1
-        if self.dash_speed or self.attack_cooldown < 0.5:
+        if self.dash_speed or self.attack_cooldown < 0.2:
             self.cur_animation = 2
             # в этом состоянии моб должен бить гг
+        else:
+            self.cur_animation = 0
 
         # смотрим коллайды по x
         self.rect.x += dx
@@ -569,16 +569,14 @@ class Enemy(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
             self.rect.x -= dx
 
-        rect_l = pygame.Rect(self.rect[0] - self.width * 5, self.rect[1], self.width * 5, self.height)
-        rect_r = pygame.Rect(self.rect[0] + self.width * 5, self.rect[1], self.width * 5, self.height)
-        screen.fill(pygame.Color('red'), rect_r)
-       # screen.blit(self)
-        if self.hero.rect.colliderect(rect_l) and self.attack_cooldown >= 1:
+        rect_l = pygame.Rect(self.rect[0] - self.width * 6, self.rect[1], self.width * 6, self.height)
+        rect_r = pygame.Rect(self.rect[0] + self.width * 6, self.rect[1], self.width * 6, self.height)
+        if self.hero.rect.colliderect(rect_l) and self.attack_cooldown >= 1 and randint(1, 5) == 1:
             print('Моб атакует по левой стороне')
             self.in_attack = True
             self.sight = 1
             self.attack_dash(-1)
-        if self.hero.rect.colliderect(rect_r) and self.attack_cooldown >= 1:
+        if self.hero.rect.colliderect(rect_r) and self.attack_cooldown >= 1 and randint(1, 5) == 1:
             print('Моб атакует по правой стороне')
             self.in_attack = True
             self.sight = 0
@@ -631,8 +629,8 @@ class Enemy(pygame.sprite.Sprite):
             self.base_health.received_hit()
 
         if self.attack_cooldown < 1:
-            self.attack_cooldown += 0.03
-        #    print(self.attack_cooldown)
+            self.attack_cooldown += 0.005
+            print(self.attack_cooldown)
 
         self.update()
 
@@ -649,16 +647,16 @@ class Enemy(pygame.sprite.Sprite):
                     self.animation_cooldown = 0
             else:
                 if self.cur_animation == 2:
-                    self.animation_cooldown += 0.2
-                else:
                     self.animation_cooldown += 0.1
+                else:
+                    self.animation_cooldown += 0.05
 
         except Exception:
             self.cur_frame = 0
 
     def attack_dash(self, n):
         self.attack_cooldown = 0
-        self.dash_speed = 7 * n
+        self.dash_speed = 8 * n
 
 
 
@@ -1265,6 +1263,12 @@ def generate_level(filename, LEVEL_COUNT):
     except Exception as f:
         print(f)
 
+def check_enemy_on_screen(enemy, target):
+    x = (target.rect.x + target.rect.w // 2 - WIDTH // 2)
+    y = (target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+    vision_rect = pygame.Rect(x - 200, y - 200, 1680, 1120)
+    if enemy.rect.colliderect(vision_rect):
+        enemy.move()
 
 if __name__ == '__main__':
     running = True
@@ -1368,7 +1372,7 @@ if __name__ == '__main__':
             screen.blit(sprite.image, camera.apply(sprite))
         hpBar.update(player)
         for enemy in enemies:
-            enemy.move()
+            check_enemy_on_screen(enemy, player)
         # Обновление экрана
         pygame.display.flip()
         clock.tick(FPS)
