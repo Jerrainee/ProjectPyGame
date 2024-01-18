@@ -634,6 +634,7 @@ class Player(pygame.sprite.Sprite):
         self.item_cd = 0
         self.exp = Score()
         self.animation_cooldown = 0
+        self.attack_cooldown = 0
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.image = pygame.transform.scale(self.image, (self.width * self.scale, self.height * self.scale))
@@ -787,7 +788,11 @@ class Player(pygame.sprite.Sprite):
                 pass
                 # коллайд по х с дэшем, моб должен получить урон
             else:
-                self.base_health.received_hit()
+                if self.attack_cooldown >= 1:
+                    self.base_health.received_hit()
+                    self.attack_cooldown = 0
+                else:
+                    self.attack_cooldown += 0.12
 
         # смотрим коллайды по y
         self.rect.y += dy
