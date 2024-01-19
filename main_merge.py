@@ -432,6 +432,8 @@ class Enemy(pygame.sprite.Sprite):
         self.moving = 'left'
         self.attack_cooldown = 1
         self.dash_speed = 0
+        self.fall_unlock = True
+        self.platform_check = False
         self.cur_animation = 0
         self.cur_frame = 0
         self.animation_list = []
@@ -446,12 +448,12 @@ class Enemy(pygame.sprite.Sprite):
         self.dead_cond = False
         self.hero = hero
         self.attack_buff = False
-        animation_types = ['idle', 'run', 'attack']
+        animation_types = ['idle', 'run', 'dash']
         for animation in animation_types:
             cur_animations_lst = []
-            n = len(os.listdir(f'./data/images/entities/enemy/{animation}'))
+            n = len(os.listdir(f'./data/images/entities/player/{animation}'))
             for i in range(n):
-                img = pygame.image.load(f'data/images/entities/enemy/{animation}/{i}.png').convert_alpha()
+                img = pygame.image.load(f'data/images/entities/player/{animation}/{i}.png').convert_alpha()
                 img = pygame.transform.scale(img,
                                              (int(img.get_width() * self.scale), int(img.get_height() * self.scale)))
                 cur_animations_lst.append(img)
@@ -526,13 +528,12 @@ class Enemy(pygame.sprite.Sprite):
     def move(self):
         dx = 0
         dy = 0
-        if randint(1, 25) == 1:
-            self.moving = choice(['left', 'right'])
+
         if self.moving == 'left' and not self.dash_speed:
-         #   dx = -STEP * 0.5
+            dx = -STEP * 0.3
             self.sight = 1
         elif self.moving == 'right' and not self.dash_speed:
-          #  dx = STEP * 0.5
+            dx = STEP * 0.3
             self.sight = 0
 
 
@@ -543,6 +544,7 @@ class Enemy(pygame.sprite.Sprite):
         dy += self.fall_y
 
         if self.dash_speed:
+            self.fall_unlock = True
             self.fall_y = 0
             dx += 2 * self.dash_speed
             if self.sight:
@@ -568,6 +570,12 @@ class Enemy(pygame.sprite.Sprite):
                 self.rect.x -= dx
         if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
             self.rect.x -= dx
+            if self.sight:
+                self.moving = 'right'
+            else:
+                self.moving = 'left'
+            self.sight = not self.sight
+
 
         rect_l = pygame.Rect(self.rect[0] - self.width * 6, self.rect[1], self.width * 6, self.height)
         rect_r = pygame.Rect(self.rect[0] + self.width * 6, self.rect[1], self.width * 6, self.height)
@@ -601,17 +609,22 @@ class Enemy(pygame.sprite.Sprite):
                 self.fall_y = 0
             if dy > 0:
                 # коллайд с землей
+                self.fall_unlock = False
                 self.jump_count = 0
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
                 self.in_air = False
         else:
-            if not pygame.sprite.spritecollideany(self, ladder_group) and not (
-            pygame.sprite.spritecollideany(self, platform_group)):
+            if not self.fall_unlock:
                 self.in_air = True
                 self.platform_check = False
-             #   self.rect.y -= (dy + 0.1)
-            #    self.rect.x -= dx
+                self.rect.y -= (dy + 0.1)
+                self.rect.x -= dx
+                if self.sight:
+                    self.moving = 'right'
+                else:
+                    self.moving = 'left'
+                self.sight = not self.sight
 
         if pygame.sprite.spritecollideany(self, platform_group):
             flag = 0
@@ -630,7 +643,9 @@ class Enemy(pygame.sprite.Sprite):
 
         if self.attack_cooldown < 1:
             self.attack_cooldown += 0.005
-            print(self.attack_cooldown)
+
+        print(self.in_air)
+        #print(self.rect)
 
         self.update()
 
@@ -829,7 +844,6 @@ class Player(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
             self.rect.x -= dx
 
-
         # коллайд гг с мобом по x
         if pygame.sprite.spritecollideany(self, enemy_group):
             if self.dash_speed:
@@ -918,8 +932,9 @@ class Player(pygame.sprite.Sprite):
             level_count += 1
             player, item = generate_level(file_name2, level_count)
 
-        # print(self.in_air)
+        #print(self.in_air)
         # print(self.fall_y)
+        #print(self.rect)
 
         self.update()
 
@@ -1244,7 +1259,7 @@ def generate_level(filename, LEVEL_COUNT):
                                                      7)  # подправьте пж,
                                 # не шарю за корды
                         if layer == 11:
-                            enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2)  # подправьте пж,
+                            enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 50, 1.7)  # подправьте пж,
                             # не шарю за корды
                             enemies.append(enemy)
                         if layer == 4:
