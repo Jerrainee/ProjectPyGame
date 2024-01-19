@@ -48,7 +48,7 @@ border_group = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
 treasure_group = pygame.sprite.Group()
-enemy_attack_group = pygame.sprite.Group()
+enemy_borders = pygame.sprite.Group()
 
 pause_buttons_group = pygame.sprite.Group()
 menu_sprite_group = pygame.sprite.Group()
@@ -119,6 +119,7 @@ menu_win_screen_button.rect.y = HEIGHT // 2 * 3 - menu_win_screen_button.image.g
 
 first_level_music = pygame.mixer.music.load('data/music/first_level.mp3')
 pygame.mixer.music.play(-1)
+
 
 class Score:
     def __init__(self):
@@ -447,7 +448,7 @@ class MiniBoss(pygame.sprite.Sprite):
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, hero, pos_x, pos_y, scale):
-        super().__init__(enemy_group, enemy_attack_group, all_sprites)
+        super().__init__(enemy_group, all_sprites)
         self.image = enemy_image
         self.scale = scale
         self.fall_y = 0
@@ -456,6 +457,7 @@ class Enemy(pygame.sprite.Sprite):
         self.moving = 'left'
         self.attack_cooldown = 1
         self.dash_speed = 0
+        self.idle = False
         self.cur_animation = 0
         self.cur_frame = 0
         self.animation_list = []
@@ -549,15 +551,21 @@ class Enemy(pygame.sprite.Sprite):
     def move(self):
         dx = 0
         dy = 0
-        if randint(1, 25) == 1:
-            self.moving = choice(['left', 'right'])
-        if self.moving == 'left' and not self.dash_speed:
-         #   dx = -STEP * 0.5
-            self.sight = 1
-        elif self.moving == 'right' and not self.dash_speed:
-          #  dx = STEP * 0.5
-            self.sight = 0
 
+        if randint(1, 100) == 1:
+            self.idle = True
+        if not self.idle:
+            if randint(1, 50) == 1:
+                self.moving = choice(['left', 'right'])
+            if self.moving == 'left' and not self.dash_speed:
+                dx = -STEP * 0.4
+                self.sight = 1
+            elif self.moving == 'right' and not self.dash_speed:
+                dx = STEP * 0.4
+                self.sight = 0
+        if self.idle:
+            if randint(1, 30) == 1:
+                self.idle = False
 
         # добавляем g (гравитацию)
         self.fall_y += GRAVITY
@@ -576,21 +584,27 @@ class Enemy(pygame.sprite.Sprite):
             print(self.dash_speed)
 
         # check current animation
-        if dx != 0 and not self.in_air:
+        if self.idle:
+            self.cur_animation = 0
+        if dx != 0:
             self.cur_animation = 1
         if self.dash_speed or self.attack_cooldown < 0.2:
             self.cur_animation = 2
             # в этом состоянии моб должен бить гг
-        else:
-            self.cur_animation = 0
 
         # смотрим коллайды по x
         self.rect.x += dx
         if pygame.sprite.spritecollideany(self, platform_group):
             if dy > 0:
                 self.rect.x -= dx
-        if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
+        if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders) or pygame.sprite.spritecollideany(self, enemy_borders):
             self.rect.x -= dx
+            if self.moving == 'right':
+                self.moving = 'left'
+                self.sight = 1
+            else:
+                self.moving = 'right'
+                self.sight = 0
 
         rect_l = pygame.Rect(self.rect[0] - self.width * 6, self.rect[1], self.width * 6, self.height)
         rect_r = pygame.Rect(self.rect[0] + self.width * 6, self.rect[1], self.width * 6, self.height)
@@ -604,7 +618,6 @@ class Enemy(pygame.sprite.Sprite):
             self.in_attack = True
             self.sight = 0
             self.attack_dash(1)
-
 
         if pygame.sprite.spritecollideany(self, player_group):
             self.base_health.received_hit()
@@ -633,8 +646,6 @@ class Enemy(pygame.sprite.Sprite):
                     pygame.sprite.spritecollideany(self, platform_group)):
                 self.in_air = True
                 self.platform_check = False
-             #   self.rect.y -= (dy + 0.1)
-            #    self.rect.x -= dx
 
         if pygame.sprite.spritecollideany(self, platform_group):
             flag = 0
@@ -670,9 +681,9 @@ class Enemy(pygame.sprite.Sprite):
                     self.animation_cooldown = 0
             else:
                 if self.cur_animation == 2:
-                    self.animation_cooldown += 0.1
+                    self.animation_cooldown += 0.08
                 else:
-                    self.animation_cooldown += 0.05
+                    self.animation_cooldown += 0.08
 
         except Exception:
             self.cur_frame = 0
@@ -680,7 +691,6 @@ class Enemy(pygame.sprite.Sprite):
     def attack_dash(self, n):
         self.attack_cooldown = 0
         self.dash_speed = 8 * n
-
 
 
 class Player(pygame.sprite.Sprite):
@@ -1292,6 +1302,8 @@ def generate_level(filename, LEVEL_COUNT):
                                     y * tile_size * SCALE, int(tile_size * SCALE), int(tile_size * SCALE), layer)
                         if layer == 10:
                             new_player = Player((x * tile_size * SCALE), (y * tile_size * SCALE), scale_player)
+                        if layer == 9:
+                            temp.add(enemy_borders)
                         if layer == 8:
                             temp.add(treasure_group)
                             new_items.append(WorldItem(0, (x * 8 * SCALE - 5), (y * 8 * SCALE - 5), 2.2))
@@ -1326,12 +1338,14 @@ def generate_level(filename, LEVEL_COUNT):
     except Exception as f:
         print(f)
 
+
 def check_enemy_on_screen(enemy, target):
     x = (target.rect.x + target.rect.w // 2 - WIDTH // 2)
     y = (target.rect.y + target.rect.h // 2 - HEIGHT // 2)
     vision_rect = pygame.Rect(x - 200, y - 200, 1680, 1120)
     if enemy.rect.colliderect(vision_rect):
         enemy.move()
+
 
 def stop_moving():
     global moving_left, moving_right, jump, moving_down, dash
@@ -1340,6 +1354,7 @@ def stop_moving():
     jump = False
     moving_down = False
     dash = False
+
 
 def menu():
     pygame.mixer.music.stop()
@@ -1382,6 +1397,7 @@ def death_screen():
                     menu_running = True
                     death_screen_running = False
         pygame.display.flip()
+
 
 def win_screen():
     global win_screen_running, running, death_screen_running, menu_running
@@ -1438,6 +1454,7 @@ def pause_screen():
                 if event.key == pygame.K_q and dash_unlock:
                     dash = False
         pygame.display.flip()
+
 
 if __name__ == '__main__':
     running = True
@@ -1511,4 +1528,3 @@ if __name__ == '__main__':
         pygame.display.flip()
         clock.tick(FPS)
 terminate()
-
