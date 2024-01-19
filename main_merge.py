@@ -462,6 +462,7 @@ class Enemy(pygame.sprite.Sprite):
         self.cur_frame = 0
         self.animation_list = []
         self.animation_cooldown = 0
+        self.invulnerable_timer = 0
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.image = pygame.transform.scale(self.image, (self.width * self.scale, self.height * self.scale))
@@ -484,7 +485,9 @@ class Enemy(pygame.sprite.Sprite):
             self.animation_list.append(cur_animations_lst)
 
     def deal_damage(self):
-        self.base_health.received_hit()
+        if self.invulnerable_timer == 0:
+            self.base_health.received_hit()
+            self.invulnerable_timer = FPS
         self.check_death_state()
 
     def give_damage(self):
@@ -620,7 +623,9 @@ class Enemy(pygame.sprite.Sprite):
             self.attack_dash(1)
 
         if pygame.sprite.spritecollideany(self, player_group):
-            self.base_health.received_hit()
+            if self.invulnerable_timer == 0:
+                self.base_health.received_hit()
+                self.invulnerable_timer = FPS
 
         # смотрим коллайды по y
         self.rect.y += dy
@@ -660,7 +665,9 @@ class Enemy(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollideany(self, trap_group):
             self.fall_y = -11  # отскок от шипа (как прыжок)
-            self.base_health.received_hit()
+            if self.invulnerable_timer == 0:
+                self.base_health.received_hit()
+                self.invulnerable_timer = FPS
 
         if self.attack_cooldown < 1:
             self.attack_cooldown += 0.005
@@ -684,7 +691,8 @@ class Enemy(pygame.sprite.Sprite):
                     self.animation_cooldown += 0.08
                 else:
                     self.animation_cooldown += 0.08
-
+            if self.invulnerable_timer > 0:
+                self.invulnerable_timer -= 1
         except Exception:
             self.cur_frame = 0
 
@@ -698,6 +706,7 @@ class Player(pygame.sprite.Sprite):
         super().__init__(player_group, all_sprites)
         self.image = player_image
         self.scale = scale
+        self.invulnerable_timer = 0
         self.fall_y = 0
         self.in_air = False
         self.sight = 0
@@ -712,7 +721,6 @@ class Player(pygame.sprite.Sprite):
         self.item_cd = 0
         self.exp = Score()
         self.animation_cooldown = 0
-        self.attack_cooldown = 0
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.image = pygame.transform.scale(self.image, (self.width * self.scale, self.height * self.scale))
@@ -866,11 +874,9 @@ class Player(pygame.sprite.Sprite):
                 pass
                 # коллайд по х с дэшем, моб должен получить урон
             else:
-                if self.attack_cooldown >= 1:
+                if self.invulnerable_timer == 0:
                     self.base_health.received_hit()
-                    self.attack_cooldown = 0
-                else:
-                    self.attack_cooldown += 0.12
+                    self.invulnerable_timer = FPS
 
         # смотрим коллайды по y
         self.rect.y += dy
@@ -941,7 +947,9 @@ class Player(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollideany(self, trap_group) and self.dash_speed == 0:
             self.fall_y = -11  # отскок от шипа (как прыжок)
-            self.base_health.received_hit()
+            if self.invulnerable_timer == 0:
+                self.base_health.received_hit()
+                self.invulnerable_timer = FPS
             # функционал работает мега криво и кринжово, надо что-то придумать
 
         if pygame.sprite.spritecollideany(self, exit_group):
@@ -969,6 +977,8 @@ class Player(pygame.sprite.Sprite):
                 self.animation_cooldown = 0
             else:
                 self.animation_cooldown += 0.12
+            if self.invulnerable_timer > 0:
+                self.invulnerable_timer -= 1
         except Exception:
             self.cur_frame = 0
 
