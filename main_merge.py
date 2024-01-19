@@ -1270,6 +1270,7 @@ enemies = []
 def generate_level(filename, LEVEL_COUNT):
     global map, all_sprites
     try:
+        all_sprites = pygame.sprite.Group()
         if LEVEL_COUNT == 0:
             SCALE, scale_player, item_type = 6, 1.7, 2
         elif LEVEL_COUNT == 1:
@@ -1332,8 +1333,17 @@ def check_enemy_on_screen(enemy, target):
     if enemy.rect.colliderect(vision_rect):
         enemy.move()
 
+def stop_moving():
+    global moving_left, moving_right, jump, moving_down, dash
+    moving_left = False
+    moving_right = False
+    jump = False
+    moving_down = False
+    dash = False
+
 def menu():
     pygame.mixer.music.stop()
+    stop_moving()
     global menu_running, running
     while menu_running:
         screen.blit(background_menu_image, (0, 0))
@@ -1354,6 +1364,7 @@ def menu():
 
 def death_screen():
     global death_screen_running, running, menu_running
+    stop_moving()
     while death_screen_running:  # экран смерти
         screen.blit(background_death_screen, (0, 0))
         death_screen_group.draw(screen)
@@ -1374,6 +1385,7 @@ def death_screen():
 
 def win_screen():
     global win_screen_running, running, death_screen_running, menu_running
+    stop_moving()
     while win_screen_running:  # финальный экран
         win_screen_group.draw(screen)
         font = pygame.font.Font(None, 50)
