@@ -8,7 +8,7 @@ import pytmx
 from random import randint, choice
 
 file_name1 = 'data/levels/level1.tmx'
-file_name2 = 'data/levels/level3.tmx'
+file_name2 = 'data/levels/level2.tmx'
 
 FPS = 60
 STEP = 6
@@ -1227,18 +1227,12 @@ class Health:
                 break
 
     def restore_health(self, hero):
-        if hero.soul.soul_state:  # надо добавить айтемы в игру!!!!
-
-            for i in range(len(self.base_health) - 1):
+            for i in range(len(self.base_health)):
 
                 if self.base_health[i] == 0:
                     self.base_health[i] = 1
+                    print(i)
                     hero.soul_state = False
-                    break
-            else:
-                print("Base health already satisfied.")
-        else:
-            print("Soul state criteria is not met.")
 
     def add_health(self):
         self.base_health = [1] + self.base_health
@@ -1258,7 +1252,7 @@ class Soul:
 
     def reset(self):
         self.soul_state = False
-        self.soul_cond = 0.0
+        self.soul_cond = 0
 
     def charged(self):
         self.soul_state = True
@@ -1472,12 +1466,12 @@ def pause_screen():
 
 
 a = {
-    'medical': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2, HEIGHT * 0.25, 95, 95)],
-    'attack': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 95 + 2, HEIGHT * 0.25, 95, 95)],
-    'defense': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 95 * 2 + 4, HEIGHT * 0.25, 95, 95)],
+    'medical': [load_image('data/images/items/medical_item/0.png', -1), pygame.Rect(WIDTH // 2, HEIGHT * 0.25, 95, 95)],
+    'attack': [load_image('data/images/items/attack_item/0.png', -1), pygame.Rect(WIDTH // 2 + 95 + 2, HEIGHT * 0.25, 95, 95)],
+    'defense': [load_image('data/images/items/defence_item/0.png', -1), pygame.Rect(WIDTH // 2 + 95 * 2 + 4, HEIGHT * 0.25, 95, 95)],
     'soul': [load_image('data/images/items/soul_item/0.png', -1), pygame.Rect(WIDTH // 2, HEIGHT * 0.25 + 95 + 2, 95, 95)],
     'key': [load_image('data/images/items/key_item/0.png', -1), pygame.Rect(WIDTH // 2 + 95 + 2, HEIGHT * 0.25 + 95 + 2, 95, 95)],
-    'misc': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 95 * 2 + 4, HEIGHT * 0.25 + 95 + 2, 95, 95)]}
+    'misc': [load_image('data/images/items/misc_item/0.png', -1), pygame.Rect(WIDTH // 2 + 95 * 2 + 4, HEIGHT * 0.25 + 95 + 2, 95, 95)]}
 
 
 def inventory():
