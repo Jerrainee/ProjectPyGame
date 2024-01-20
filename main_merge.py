@@ -54,6 +54,7 @@ pause_buttons_group = pygame.sprite.Group()
 menu_sprite_group = pygame.sprite.Group()
 death_screen_group = pygame.sprite.Group()
 win_screen_group = pygame.sprite.Group()
+inventory_sprites = pygame.sprite.Group()
 
 enemies = []
 level_count = 0
@@ -119,7 +120,6 @@ menu_win_screen_button.rect.y = HEIGHT // 2 * 3 - menu_win_screen_button.image.g
 
 first_level_music = pygame.mixer.music.load('data/music/first_level.mp3')
 pygame.mixer.music.play(-1)
-
 
 class Score:
     def __init__(self):
@@ -693,6 +693,7 @@ class Enemy(pygame.sprite.Sprite):
         self.dash_speed = 8 * n
 
 
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y, scale):
         super().__init__(player_group, all_sprites)
@@ -724,6 +725,7 @@ class Player(pygame.sprite.Sprite):
         self.exp = Score()
         self.attack_buff = False
         self.items = {'medical': [], 'attack': [], 'defense': [], 'soul': [], 'key': [], 'misc': []}
+        self.chosen_item = None
 
         animation_types = ['idle', 'run', 'jump', 'in_air', 'climb', 'dash']
         for animation in animation_types:
@@ -1049,7 +1051,7 @@ class Player(pygame.sprite.Sprite):
             return None
 
     def can_use_key(self):
-        return True if len(self.items['key']) != 0 else False
+        return True if self.chosen_item == 'key' else False
 
 
 class HealthBar(pygame.sprite.Sprite):
@@ -1161,10 +1163,9 @@ class WorldItem(pygame.sprite.Sprite):
                 self.kill()
             if self.item_lst[self.item_type] == 'treasure' and self in item_group:
                 global push_event
-                push_event = True
                 res = player.can_use_key()
                 # коллайд с сундуком, вызов функции открытия
-                if res is True:
+                if res and push_event:
                     player.used_key(res)  # игрок открыл сундук
                     d = {-1: 'medical', -2: 'defense', -3: 'soul', -4: 'double_jump'}
                     self.type = d[choice([-1, -2, -3, -4])]  # игроку выпал рандомный айтем и
@@ -1456,6 +1457,50 @@ def pause_screen():
         pygame.display.flip()
 
 
+a = {
+    'medical': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 4, HEIGHT * 0.25 + 4, 75, 75)],
+    'attack': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 4 + 1 + 75, HEIGHT * 0.25 + 4, 75, 75)],
+    'defense': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 4 + 2 + 75 * 2, HEIGHT * 0.25 + 4, 75, 75)],
+    'soul': [load_image('data/images/items/soul_item/0.png', -1), pygame.Rect(WIDTH // 2 + 4, HEIGHT * 0.25 + 4 + 75 + 1, 75, 75)],
+    'key': [load_image('data/images/items/key_item/0.png', -1), pygame.Rect(WIDTH // 2 + 4 + 1 + 75, HEIGHT * 0.25 + 4 + 75 + 1, 75, 75)],
+    'misc': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 4 + 2 + 75 * 2, HEIGHT * 0.25 + 4 + 75 + 1, 75, 75)]}
+
+
+def inventory():
+    global running, inventory_running, player
+    inventory_running = True  # global inventory_running
+    highlight = False
+    stop_moving()
+    rect = []
+    while inventory_running:
+        screen.fill((0, 0, 0))
+        pygame.draw.rect(screen, (0, 0, 255), (WIDTH // 2, HEIGHT * 0.25, 75 * 3 + 10, 75 * 2 + 10), 1)
+        if highlight:
+            pygame.draw.rect(screen, (255, 0, 0), rect, 1)
+        for i in player.items.keys():
+            if len(player.items[i]) > 0:
+                screen.blit(a[i][0], a[i][1])
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                inventory_running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_f:
+                    inventory_running = False
+            if pygame.mouse.get_pressed()[0]:
+                for i in a.keys():
+                    if a[i][1].collidepoint(event.pos) and len(player.items[i]) > 0:
+                        player.chosen_item = i
+            if event.type == pygame.MOUSEMOTION:
+                highlight = False
+                for i in a.keys():
+                    if a[i][1].collidepoint(event.pos) and len(player.items[i]) > 0:
+                        highlight = True
+                        rect = a[i][1][0] - 5, a[i][1][1] - 5, a[i][1][2] + 5, a[i][1][3] + 5
+
+            pygame.display.flip()
+
+
 if __name__ == '__main__':
     running = True
     menu_running = True
@@ -1463,6 +1508,7 @@ if __name__ == '__main__':
     pause_running = False
     win_screen_running = False
     death_screen_running = False
+    inventory_running = False
     while running:
         if menu_running:
             res = menu()
@@ -1475,6 +1521,8 @@ if __name__ == '__main__':
                 player, items, hpBar = res
         if win_screen_running:
             win_screen()
+        if inventory_running:
+            inventory()
         screen.fill(pygame.Color("black"))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1493,12 +1541,26 @@ if __name__ == '__main__':
                     moving_down = True
                 if event.key == pygame.K_q and dash_unlock:
                     dash = True
-                if event.key == pygame.K_e:
-                    push_event = True
-                if event.type == pygame.K_f:
-                    # отображение инвентаря
+                if event.key == pygame.K_f:
+                    inventory_running = True
                     print('inventory')
-                    pass
+                if event.key == pygame.K_e:
+                    try:
+                        push_event = True
+                        if len(player.items[player.chosen_item]) > 0:
+                            if player.chosen_item == 'medical':
+                                player.used_medical_item(player.items[player.chosen_item][-1])
+                            if player.chosen_item == 'attack':
+                                player.used_attack_item(player.items[player.chosen_item][-1])
+                            if player.chosen_item == 'defense':
+                                player.used_defensive_item(player.items[player.chosen_item][-1])
+                            if player.chosen_item == 'soul':
+                                player.used_soul_item(player.items[player.chosen_item][-1])
+                            if player.chosen_item == 'misc':
+                                player.used_misc_item(player.items[player.chosen_item][-1])
+                    except Exception:
+                        push_event = False
+                        print(push_event)
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_a:
                     moving_left = False
@@ -1528,3 +1590,4 @@ if __name__ == '__main__':
         pygame.display.flip()
         clock.tick(FPS)
 terminate()
+
