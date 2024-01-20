@@ -75,6 +75,11 @@ def load_image(name, color_key=None):
         image = image.convert_alpha()
     return image
 
+def remove_bg_from_tiles(image):
+    color_key = image.get_at((0, 0))
+    image.set_colorkey(color_key)
+    return image
+
 
 player_image = load_image('data/images/entities/player/hero.png', -1)
 enemy_image = load_image('data/images/entities/enemy/enemy.png', -1)
@@ -462,6 +467,7 @@ class Enemy(pygame.sprite.Sprite):
         self.cur_frame = 0
         self.animation_list = []
         self.animation_cooldown = 0
+        self.invulnerable_timer = 0
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.image = pygame.transform.scale(self.image, (self.width * self.scale, self.height * self.scale))
@@ -484,7 +490,9 @@ class Enemy(pygame.sprite.Sprite):
             self.animation_list.append(cur_animations_lst)
 
     def deal_damage(self):
-        self.base_health.received_hit()
+        if self.invulnerable_timer == 0:
+            self.base_health.received_hit()
+            self.invulnerable_timer = FPS
         self.check_death_state()
 
     def give_damage(self):
@@ -581,8 +589,6 @@ class Enemy(pygame.sprite.Sprite):
             else:
                 self.dash_speed -= 0.5
 
-            print(self.dash_speed)
-
         # check current animation
         if self.idle:
             self.cur_animation = 0
@@ -597,7 +603,9 @@ class Enemy(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, platform_group):
             if dy > 0:
                 self.rect.x -= dx
-        if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders) or pygame.sprite.spritecollideany(self, enemy_borders):
+        if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self,
+                                                                                              vertical_borders) or pygame.sprite.spritecollideany(
+                self, enemy_borders):
             self.rect.x -= dx
             if self.moving == 'right':
                 self.moving = 'left'
@@ -608,22 +616,30 @@ class Enemy(pygame.sprite.Sprite):
 
         rect_l = pygame.Rect(self.rect[0] - self.width * 6, self.rect[1], self.width * 6, self.height)
         rect_r = pygame.Rect(self.rect[0] + self.width * 6, self.rect[1], self.width * 6, self.height)
-        if self.hero.rect.colliderect(rect_l) and self.attack_cooldown >= 1 and randint(1, 5) == 1:
+        if self.hero.rect.colliderect(rect_l) and self.attack_cooldown >= 1 and self in enemy_group and randint(1, 5) == 1:
             print('Моб атакует по левой стороне')
             self.in_attack = True
             self.sight = 1
             self.attack_dash(-1)
-        if self.hero.rect.colliderect(rect_r) and self.attack_cooldown >= 1 and randint(1, 5) == 1:
+        if self.hero.rect.colliderect(rect_r) and self.attack_cooldown >= 1 and self in enemy_group and randint(1, 5) == 1:
             print('Моб атакует по правой стороне')
             self.in_attack = True
             self.sight = 0
             self.attack_dash(1)
 
-        if pygame.sprite.spritecollideany(self, player_group):
-            self.base_health.received_hit()
-
-        # смотрим коллайды по y
+        # смотрим коллайды по y (где-то и по х, и по у)
         self.rect.y += dy
+
+        if pygame.sprite.spritecollideany(self, player_group):
+            if self.invulnerable_timer == 0 and (self.hero.dash_speed or self.hero.jump_on_enemy):
+                self.deal_damage()
+                self.invulnerable_timer = FPS * 0.5
+                print('мобу наносится урон')
+            elif self.hero.invulnerable_timer == 0 and not self.hero.dash_speed and self in enemy_group:
+                self.hero.base_health.received_hit()
+                self.hero.invulnerable_timer = FPS
+                print('гг наносится урон')
+            self.hero.jump_on_enemy = False
 
         if pygame.sprite.spritecollideany(self, horizontal_borders):
             for i in self.base_health.base_health:
@@ -660,11 +676,12 @@ class Enemy(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollideany(self, trap_group):
             self.fall_y = -11  # отскок от шипа (как прыжок)
-            self.base_health.received_hit()
+            if self.invulnerable_timer == 0:
+                self.base_health.received_hit()
+                self.invulnerable_timer = FPS
 
         if self.attack_cooldown < 1:
             self.attack_cooldown += 0.005
-            print(self.attack_cooldown)
 
         self.update()
 
@@ -680,11 +697,10 @@ class Enemy(pygame.sprite.Sprite):
                     self.cur_frame = 0
                     self.animation_cooldown = 0
             else:
-                if self.cur_animation == 2:
-                    self.animation_cooldown += 0.08
-                else:
-                    self.animation_cooldown += 0.08
+                self.animation_cooldown += 0.08
 
+            if self.invulnerable_timer > 0:
+                self.invulnerable_timer -= 1
         except Exception:
             self.cur_frame = 0
 
@@ -699,6 +715,7 @@ class Player(pygame.sprite.Sprite):
         super().__init__(player_group, all_sprites)
         self.image = player_image
         self.scale = scale
+        self.invulnerable_timer = 0
         self.fall_y = 0
         self.in_air = False
         self.sight = 0
@@ -711,9 +728,9 @@ class Player(pygame.sprite.Sprite):
         self.cur_frame = 0
         self.animation_list = []
         self.item_cd = 0
+        self.jump_on_enemy = False
         self.exp = Score()
         self.animation_cooldown = 0
-        self.attack_cooldown = 0
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.image = pygame.transform.scale(self.image, (self.width * self.scale, self.height * self.scale))
@@ -826,6 +843,7 @@ class Player(pygame.sprite.Sprite):
             self.n_dash += 0.025
 
         if self.dash_speed:
+            dx, dy = 0, 0
             self.fall_y = 0
             dx += STEP * self.dash_speed
             if self.sight:
@@ -862,18 +880,6 @@ class Player(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self, vertical_borders):
             self.rect.x -= dx
 
-        # коллайд гг с мобом по x
-        if pygame.sprite.spritecollideany(self, enemy_group):
-            if self.dash_speed:
-                pass
-                # коллайд по х с дэшем, моб должен получить урон
-            else:
-                if self.attack_cooldown >= 1:
-                    self.base_health.received_hit()
-                    self.attack_cooldown = 0
-                else:
-                    self.attack_cooldown += 0.12
-
         # смотрим коллайды по y
         self.rect.y += dy
 
@@ -883,10 +889,10 @@ class Player(pygame.sprite.Sprite):
                     self.received_hit()
 
         if pygame.sprite.spritecollideany(self, enemy_group):
-            self.fall_y = -11
-            victim = pygame.sprite.spritecollideany(self, enemy_group)
-            if victim and isinstance(victim, Tile) is False:
-                victim.deal_damage()
+            if dy > 0.5:
+                self.fall_y = -11
+                self.jump_on_enemy = True
+
 
         if pygame.sprite.spritecollideany(self, ladder_group):
             self.jump_count = 0
@@ -943,7 +949,9 @@ class Player(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollideany(self, trap_group) and self.dash_speed == 0:
             self.fall_y = -11  # отскок от шипа (как прыжок)
-            self.base_health.received_hit()
+            if self.invulnerable_timer == 0:
+                self.base_health.received_hit()
+                self.invulnerable_timer = FPS
             # функционал работает мега криво и кринжово, надо что-то придумать
 
         if pygame.sprite.spritecollideany(self, exit_group):
@@ -955,6 +963,7 @@ class Player(pygame.sprite.Sprite):
 
         # print(self.in_air)
         # print(self.fall_y)
+        #print(self.jump_on_enemy)
 
         self.update()
 
@@ -971,6 +980,8 @@ class Player(pygame.sprite.Sprite):
                 self.animation_cooldown = 0
             else:
                 self.animation_cooldown += 0.12
+            if self.invulnerable_timer > 0:
+                self.invulnerable_timer -= 1
         except Exception:
             self.cur_frame = 0
 
@@ -1298,6 +1309,8 @@ def generate_level(filename, LEVEL_COUNT):
                 for x in range(map.width):
                     image = map.get_tile_image(x, y, layer)
                     if image:
+                        if layer == 11 or layer == 12 or layer == 4 or layer == 2:
+                            remove_bg_from_tiles(image)
                         temp = Tile(pygame.transform.scale(image, (tile_size * SCALE, tile_size * SCALE)),
                                     x * tile_size * SCALE,
                                     y * tile_size * SCALE, int(tile_size * SCALE), int(tile_size * SCALE), layer)
@@ -1316,12 +1329,9 @@ def generate_level(filename, LEVEL_COUNT):
                             temp.add(exit_group)
                         if layer == 12:
                             for _ in range(randint(1, 7)):
-                                mini_boss = MiniBoss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55,
-                                                     7)  # подправьте пж,
-                                # не шарю за корды
+                                mini_boss = MiniBoss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55,7)
                         if layer == 11:
-                            enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2)  # подправьте пж,
-                            # не шарю за корды
+                            enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2)
                             enemies.append(enemy)
                         if layer == 4:
                             temp.add(trap_group)
@@ -1452,7 +1462,7 @@ def pause_screen():
                     jump = False
                 if event.key == pygame.K_s:
                     moving_down = False
-                if event.key == pygame.K_q and dash_unlock:
+                if event.key == pygame.K_LSHIFT and dash_unlock:
                     dash = False
         pygame.display.flip()
 
@@ -1539,7 +1549,7 @@ if __name__ == '__main__':
                     jump = True
                 if event.key == pygame.K_s:
                     moving_down = True
-                if event.key == pygame.K_q and dash_unlock:
+                if event.key == pygame.K_LSHIFT and dash_unlock:
                     dash = True
                 if event.key == pygame.K_f:
                     inventory_running = True
@@ -1571,12 +1581,15 @@ if __name__ == '__main__':
                     double_jump_check = True
                 if event.key == pygame.K_s:
                     moving_down = False
-                if event.key == pygame.K_q and dash_unlock:
+                if event.key == pygame.K_LSHIFT and dash_unlock:
                     dash = False
                 if event.key == pygame.K_e:
                     push_event = False
                 if event.type == pygame.K_f:
                     pass  # закрытие инвентаря
+
+            if event.type == pygame.MOUSEMOTION:
+                pass
         player.move(moving_left, moving_right, jump, moving_down, dash)
         camera.update(player)
         for i in items:
@@ -1589,5 +1602,6 @@ if __name__ == '__main__':
         # Обновление экрана
         pygame.display.flip()
         clock.tick(FPS)
+
 terminate()
 
