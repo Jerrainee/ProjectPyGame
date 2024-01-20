@@ -1582,6 +1582,9 @@ def generate_level(filename, LEVEL_COUNT):
                         if layer == 11:
                             enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2)
                             enemies.append(enemy)
+                        if layer == 14:
+                            boss = Boss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2)
+                            enemies.append(boss)
                         if layer == 4:
                             temp.add(trap_group)
                         if layer == 3:
