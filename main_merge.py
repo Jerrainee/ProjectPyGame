@@ -1021,6 +1021,7 @@ class Player(pygame.sprite.Sprite):
                 index = i
 
         self.items['medical'].pop(index)
+        print(self.items)
 
     def used_soul_item(self, item):
         item_name = item.name
@@ -1274,7 +1275,7 @@ class Player(pygame.sprite.Sprite):
 
         for i in range(times):
             self.base_health.add_health()
-
+            print(player.base_health.base_health)
         item_id = item.id
 
         index = 0
@@ -1482,6 +1483,7 @@ class Health:
                     self.base_health[i] = 1
                     print(i)
                     hero.soul_state = False
+                    break
 
     def add_health(self):
         self.base_health = [1] + self.base_health
@@ -1574,10 +1576,10 @@ def generate_level(filename, LEVEL_COUNT):
                             new_items.append(WorldItem(item_type, (x * 8 * SCALE + 5), (y * 8 * SCALE) - 70, 4.5))
                         if layer == 5:
                             temp.add(exit_group)
-                        if layer == 12:
+                        if layer == 12 and LEVEL_COUNT == 0:
                             for _ in range(randint(1, 7)):
                                 mini_boss = MiniBoss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55,7)
-                        if layer == 11:
+                        if layer == 11 and LEVEL_COUNT == 0:
                             enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2)
                             enemies.append(enemy)
                         if layer == 14:
