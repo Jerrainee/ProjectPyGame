@@ -109,8 +109,8 @@ background_death_screen = load_image('data/images/interface/death_screen/backgro
 restart_death_screen_button = pygame.sprite.Sprite(death_screen_group)
 restart_death_screen_button.image = load_image('data/images/interface/death_screen/restart_button.png', -1)
 restart_death_screen_button.rect = restart_death_screen_button.image.get_rect()
-restart_death_screen_button.rect.x = WIDTH // 2 - restart_death_screen_button.image.get_width() - 20
-restart_death_screen_button.rect.y = HEIGHT // 4 * 3
+restart_death_screen_button.rect.x = WIDTH // restart_death_screen_button.image.get_width() - 20
+restart_death_screen_button.rect.y = HEIGHT // restart_death_screen_button.image.get_width() - 20
 menu_death_screen_button = pygame.sprite.Sprite(death_screen_group)
 menu_death_screen_button.image = load_image('data/images/interface/death_screen/menu_button.png')
 menu_death_screen_button.rect = menu_death_screen_button.image.get_rect()
@@ -1509,7 +1509,6 @@ class Soul:
         self.soul_state = True
         self.soul_cond = 1
 
-
 class Camera:
     # зададим начальный сдвиг камеры
     def __init__(self):
@@ -1545,7 +1544,8 @@ def generate_level(filename, LEVEL_COUNT):
         if LEVEL_COUNT == 0:
             SCALE, scale_player, item_type = 6, 1.7, 2
         elif LEVEL_COUNT == 1:
-            SCALE, scale_player, item_type = 3, 1.5, 3
+            SCALE, scale_player, item_type = 6, 1.7, 3
+
         map = pytmx.load_pygame(filename)
         tile_size = map.tilewidth
         Border(0, map.height * tile_size * SCALE, map.width * tile_size * SCALE, map.height * tile_size * SCALE)
@@ -1553,12 +1553,12 @@ def generate_level(filename, LEVEL_COUNT):
         Border(map.width * tile_size * SCALE, 0, map.width * tile_size * SCALE, map.height * tile_size * SCALE)
         new_player = None
         new_items = []
-        for layer in range(13):
+        for layer in range(14):
             for y in range(map.height):
                 for x in range(map.width):
                     image = map.get_tile_image(x, y, layer)
                     if image:
-                        if layer == 11 or layer == 12 or layer == 4 or layer == 2:
+                        if layer == 11 or layer == 12 or layer == 4 or layer == 2 or layer == 6:
                             remove_bg_from_tiles(image)
                         temp = Tile(pygame.transform.scale(image, (tile_size * SCALE, tile_size * SCALE)),
                                     x * tile_size * SCALE,
@@ -1577,13 +1577,14 @@ def generate_level(filename, LEVEL_COUNT):
                         if layer == 5:
                             temp.add(exit_group)
                         if layer == 12 and LEVEL_COUNT == 0:
-                            for _ in range(randint(1, 7)):
-                                mini_boss = MiniBoss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55,7)
+                            mini_boss = MiniBoss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55,7)
+
                         if layer == 11 and LEVEL_COUNT == 0:
                             enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2)
                             enemies.append(enemy)
-                        if layer == 14:
-                            boss = Boss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2)
+
+                        if layer == 13:
+                            boss = Boss(new_player, x * 8 * SCALE, y * 8 * SCALE - 70, 4)
                             enemies.append(boss)
                         if layer == 4:
                             temp.add(trap_group)
