@@ -1012,33 +1012,11 @@ class Player(pygame.sprite.Sprite):
     def used_medical_item(self, item):
         print('asdasd')
         self.base_health.restore_health(self)
-
-        item_id = item.id
-
-        index = 0
-        for i in range(len(self.items['medical'])):
-            if item_id == self.items['medical'][i].id:
-                index = i
-
-        self.items['medical'].pop(index)
-        print(self.items)
+        self.items['medical'].pop()
 
     def used_soul_item(self, item):
-        item_name = item.name
-
-        if item_name == "increment":
-            self.soul.usual_increment += 0.25
-        elif item_name == 'base_charge':
-            self.soul.charged()
-
-        item_id = item.id
-
-        index = 0
-        for i in range(len(self.items['soul'])):
-            if item_id == self.items['soul'][i].id:
-                index = i
-
-        self.items['soul'].pop(index)
+        self.soul.charged()
+        self.items['soul'].pop()
 
     def used_misc_item(self, item):
         print("Can't use misc items.")
@@ -1271,47 +1249,26 @@ class Player(pygame.sprite.Sprite):
         self.base_health.received_hit()
 
     def used_defensive_item(self, item):
-        times = item.def_value
+        self.base_health.add_health()
 
-        for i in range(times):
-            self.base_health.add_health()
-            print(player.base_health.base_health)
-        item_id = item.id
-
-        index = 0
-        for i in range(len(self.items['defense'])):
-            if item_id == self.items['defense'][i].id:
-                index = i
-
-        self.items['defense'].pop(index)
+        self.items['defense'].pop()
 
     def used_attack_item(self, item):
         self.attack_buff = True
-
-        item_id = item.id
-
-        index = 0
-        for i in range(len(self.items['attack'])):
-            if item_id == self.items['attack'][i].id:
-                index = i
-
-        self.items['attack'].pop(index)
+        self.items['attack'].pop()
 
     def update_cd(self):
         self.item_cd += 1
 
     def used_key(self, key):
         global push_event
-        self.update_cd()
         print('sa')
-        if key and push_event and self.item_cd == 1:
+        if key and push_event:
             self.items['key'].pop(-1)
             # открытие сундука, поздравление игрока
             push_event = False
-            return True
 
         else:
-            print(key, push_event, self.item_cd)
             print("Can't use key here. There are no chests nearby.")
             return None
 
