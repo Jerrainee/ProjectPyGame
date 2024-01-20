@@ -890,7 +890,6 @@ class Player(pygame.sprite.Sprite):
             if dy > 0.5:
                 self.fall_y = -11
                 self.jump_on_enemy = True
-                print(dy)
 
 
         if pygame.sprite.spritecollideany(self, ladder_group):
