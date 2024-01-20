@@ -224,7 +224,7 @@ class Projectile(pygame.sprite.Sprite):
             self.dy = 0
             self.dn = -1
         self.imnum = 1
-        self.damage = 3
+        self.damage = 1
         self.shooter = shooter
 
     def update(self):
@@ -239,8 +239,8 @@ class Projectile(pygame.sprite.Sprite):
         self.image = self.frames[self.imnum - 1]
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect(center=center)
-        self.rect.x += self.dx
-        self.rect.y += self.dy
+        self.rect.x += self.dx * 2.25
+        self.rect.y += self.dy * 2.25
         self.d += 8
         if self.d >= 192:
             self.kill()
@@ -263,8 +263,9 @@ class Boss(pygame.sprite.Sprite):
         self.fall_y = 0
         self.in_air = False
         self.sight = 0
-        self.moving = 'left'
         self.attack_cooldown = 1
+        self.moving = 'left'
+        self.platform_check = False
         self.dash_speed = 0
         self.idle = False
         self.cur_animation = 0
@@ -281,6 +282,7 @@ class Boss(pygame.sprite.Sprite):
         self.base_health = Health(20)
         self.soul = Soul(0.5)
         self.charge = 0.0
+        self.long_shot_cd = 0
         self.dead_cond = False
         self.hero = hero
         self.attack_buff = False
@@ -315,23 +317,26 @@ class Boss(pygame.sprite.Sprite):
                 self.hero.base_health.received_hit()
         else:
             self.hero.base_health.received_hit()
-
+        self.hero.base_health.received_hit()
         self.charge_long_distance_shot()
 
     def give_long_damage(self):  # Босс наносит удар с дальнего расстояния (дальний бой)
-        if self.charge == 100:
-            self.soul.given_hit()
-            if self.sight == 0:
-                projectile = Projectile(self.rect.x, self.rect.y, 'right', None, self)
+        if self.long_shot_cd >= 1:
+            hero_x = self.hero.rect.x
+            self.target_x = hero_x
+            sight = (self.target_x - self.rect.x)
+            print(sight)
+            if sight > 0:
+                projectile = Projectile(self.rect.x + 35, self.rect.y + 50, 'right', None, self)
                 all_sprites.add(projectile)
                 projectiles.add(projectile)
             else:
-                projectile = Projectile(self.rect.x, self.rect.y, 'left', None, self)
+                projectile = Projectile(self.rect.x - 35, self.rect.y + 50, 'left', None, self)
                 all_sprites.add(projectile)
                 projectiles.add(projectile)
-            self.charge = 0.0
+            self.long_shot_cd = 0
         else:
-            print('Not charged yet.')
+            self.long_shot_cd += 0.015
 
         #  лонгшот должен отличаться от обычного удара и надо его эпик его нарисовать  #
 
@@ -352,8 +357,7 @@ class Boss(pygame.sprite.Sprite):
 
         else:
             should_drop_anything = False
-
-        self.give_hero_score()
+        self.kill()
 
         print("Death of Boss validated. Deleting boss.")
 
@@ -383,18 +387,17 @@ class Boss(pygame.sprite.Sprite):
             print('Boss is still alive.')
 
     def attack(self):
-        ar = randint(1, 2)
-        if ar == 1:
-            self.give_short_damage()
-        else:
-            self.give_long_damage()
+        self.give_short_damage()
 
     def move(self):
         dx = 0
         dy = 0
         hero_x = self.hero.rect.x
         self.target_x = hero_x
-        self.rect.x += (self.target_x - self.rect.x) * 0.05
+        self.rect.x += (self.target_x - self.rect.x) * 0.015
+        if self not in enemy_group:
+            print('s')
+            return
 
         if randint(1, 100) == 1:
             self.idle = True
@@ -410,7 +413,9 @@ class Boss(pygame.sprite.Sprite):
         if self.idle:
             if randint(1, 30) == 1:
                 self.idle = False
-
+        if abs(self.target_x - self.rect.x) >= 25 and self in enemy_group:
+            self.give_long_damage()
+            self.hero.invulnerable_timer = FPS
         # добавляем g (гравитацию)
         self.fall_y += GRAVITY
         if self.fall_y > 11:
@@ -1323,7 +1328,6 @@ class HealthBar(pygame.sprite.Sprite):
     def __init__(self, player):
         super().__init__(all_sprites)
         self.image = pygame.image.load('./data/images/interface/healthbar/hp_active/0.png')
-        self.id = randint(100000, 1000000)
         self.player = player
         self.cur_hp = player.base_health.base_health
         self.scale = 2
@@ -1586,6 +1590,7 @@ def generate_level(filename, LEVEL_COUNT):
                         if layer == 13:
                             boss = Boss(new_player, x * 8 * SCALE, y * 8 * SCALE - 70, 4)
                             enemies.append(boss)
+                            enemy_group.add(boss)
                         if layer == 4:
                             temp.add(trap_group)
                         if layer == 3:
