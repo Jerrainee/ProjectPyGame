@@ -1771,6 +1771,7 @@ if __name__ == '__main__':
     win_screen_running = False
     death_screen_running = False
     inventory_running = False
+    room = 4
     while running:
         if menu_running:
             res = menu()
@@ -1851,6 +1852,11 @@ if __name__ == '__main__':
         hpBar.update(player)
         for enemy in enemies:
             check_enemy_on_screen(enemy, player)
+        if room >= 3:
+            projectiles.update()
+            room = 0
+        projectiles.draw(screen)
+        room += 1
 
         # Обновление экрана
         pygame.display.flip()
