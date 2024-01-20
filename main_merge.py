@@ -75,6 +75,7 @@ def load_image(name, color_key=None):
         image = image.convert_alpha()
     return image
 
+
 def remove_bg_from_tiles(image):
     color_key = image.get_at((0, 0))
     image.set_colorkey(color_key)
@@ -128,6 +129,7 @@ select_bar_inventory_image = load_image('data/images/interface/inventory/select_
 
 first_level_music = pygame.mixer.music.load('data/music/first_level.mp3')
 pygame.mixer.music.play(-1)
+
 
 class Score:
     def __init__(self):
@@ -192,17 +194,111 @@ def terminate():
     sys.exit()
 
 
-class Boss:
-    def __init__(self, hero):  # инициализация объекта класса Босс. передача аргумента гг
+projectile_frame = load_image('data/images/items/projectile/projectile.png').convert_alpha()
+
+
+class Projectile(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y, step, direction, shooter, detonate_frames=None):
+        pygame.sprite.Sprite.__init__(self)
+        self.frames = [projectile_frame]
+        self.detonate_frames = detonate_frames
+        self.image = projectile_frame
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect().move(pos_x, pos_y)
+        self.start_x = pos_x
+        self.d = 0
+        if step == 'up':
+            self.dx = 0
+            self.dy = -8
+            self.dn = 1
+        elif step == 'down':
+            self.dx = 0
+            self.dy = 8
+            self.dn = 1
+        elif step == 'right':
+            self.dx = 8
+            self.dy = 0
+            self.dn = 1
+        elif step == 'left':
+            self.dx = -8
+            self.dy = 0
+            self.dn = -1
+        self.imnum = 1
+        self.damage = 3
+        self.shooter = shooter
+
+    def update(self):
+        self.imnum += self.dn
+        center = self.rect.center
+        if self.detonate_frames and self.d >= 96:
+            self.frames = self.detonate_frames
+        if self.imnum > len(self.frames):
+            self.imnum = 1
+        elif self.imnum < 0:
+            self.imnum = len(self.frames)
+        self.image = self.frames[self.imnum - 1]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect(center=center)
+        self.rect.x += self.dx
+        self.rect.y += self.dy
+        self.d += 8
+        if self.d >= 192:
+            self.kill()
+        for wall in wall_group:
+            if pygame.sprite.collide_mask(wall, self):
+                self.kill()
+        if self.rect.colliderect(player.rect):
+            player.base_health.received_hit()
+            self.kill()
+
+
+projectiles = pygame.sprite.Group()
+
+
+class Boss(pygame.sprite.Sprite):
+    def __init__(self, hero, pos_x, pos_y, scale):  # инициализация объекта класса Босс. передача аргумента гг
+        super().__init__(boss_group, all_sprites)
+        self.image = enemy_image
+        self.scale = scale
+        self.fall_y = 0
+        self.in_air = False
+        self.sight = 0
+        self.moving = 'left'
+        self.attack_cooldown = 1
+        self.dash_speed = 0
+        self.idle = False
+        self.cur_animation = 0
+        self.cur_frame = 0
+        self.animation_list = []
+        self.animation_cooldown = 0
+        self.invulnerable_timer = 0
+        self.target_x = 0
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
+        self.image = pygame.transform.scale(self.image, (self.width * self.scale, self.height * self.scale))
+        self.rect = self.image.get_rect().move(
+            pos_x, pos_y)
         self.base_health = Health(20)
         self.soul = Soul(0.5)
         self.charge = 0.0
         self.dead_cond = False
         self.hero = hero
+        self.attack_buff = False
+        animation_types = ['idle', 'run', 'attack_1', 'attack_2', 'death']
+        for animation in animation_types:
+            cur_animations_lst = []
+            n = len(os.listdir(f'./data/images/entities/final_boss/{animation}'))
+            for i in range(n):
+                img = pygame.image.load(f'data/images/entities/final_boss/{animation}/{i}.png').convert_alpha()
+                img = pygame.transform.scale(img,
+                                             (int(img.get_width() * self.scale), int(img.get_height() * self.scale)))
+                cur_animations_lst.append(img)
+            self.animation_list.append(cur_animations_lst)
 
     def deal_damage(self):  # Босс получил урон. Первая функция убирает одно хп, вторая - проверяет, мертв ли босс
-        self.base_health.received_hit()
-
+        if self.invulnerable_timer == 0:
+            self.base_health.received_hit()
+            self.invulnerable_timer = FPS
         self.check_death_state()
 
     def give_short_damage(self):  # Босс наносит удар с близкого расстояния (ближний бой)
@@ -225,23 +321,19 @@ class Boss:
     def give_long_damage(self):  # Босс наносит удар с дальнего расстояния (дальний бой)
         if self.charge == 100:
             self.soul.given_hit()
-
-            if self.soul.soul_state is True:
-                should_crit = True if randint(1, 2) == 10 else False
-
-                if should_crit:
-                    self.hero.base_health.received_hit()
-                    self.hero.base_health.received_hit()
-                    self.soul.reset()
-                else:
-                    self.hero.base_health.received_hit()
+            if self.sight == 0:
+                projectile = Projectile(self.rect.x, self.rect.y, 'right', None, self)
+                all_sprites.add(projectile)
+                projectiles.add(projectile)
             else:
-                self.hero.base_health.received_hit()
+                projectile = Projectile(self.rect.x, self.rect.y, 'left', None, self)
+                all_sprites.add(projectile)
+                projectiles.add(projectile)
             self.charge = 0.0
         else:
             print('Not charged yet.')
 
-        #  лонгшот должен отличаться от обычного удара и надо его эпик его нарисовать
+        #  лонгшот должен отличаться от обычного удара и надо его эпик его нарисовать  #
 
     def charge_long_distance_shot(self):  # После нанесения урона вблизи, босс регенерирует возможность лонгшота
         self.charge += 25
@@ -261,19 +353,11 @@ class Boss:
         else:
             should_drop_anything = False
 
-        if should_drop_anything:
-            self.drop_items()
-
         self.give_hero_score()
 
         print("Death of Boss validated. Deleting boss.")
 
         del self
-
-    def drop_items(self):  # Функция которая отвечает за дроп предмета из босса
-        item = None  # выберите рандомный айтем и присвойте его этой переменной
-
-        # киньте этот айтем на поле и дайте игроку возможность его подобрать и пусть игрок подбирает
 
     def give_hero_score(self):  # Функция которая дает гг опыт и очки за победу над боссом
         basic_value = 100
@@ -297,6 +381,172 @@ class Boss:
 
         else:
             print('Boss is still alive.')
+
+    def attack(self):
+        ar = randint(1, 2)
+        if ar == 1:
+            self.give_short_damage()
+        else:
+            self.give_long_damage()
+
+    def move(self):
+        dx = 0
+        dy = 0
+        hero_x = self.hero.rect.x
+        self.target_x = hero_x
+        self.rect.x += (self.target_x - self.rect.x) * 0.05
+
+        if randint(1, 100) == 1:
+            self.idle = True
+        if not self.idle:
+            if randint(1, 50) == 1:
+                self.moving = choice(['left', 'right'])
+            if self.moving == 'left' and not self.dash_speed:
+                dx = -STEP * 0.4
+                self.sight = 1
+            elif self.moving == 'right' and not self.dash_speed:
+                dx = STEP * 0.4
+                self.sight = 0
+        if self.idle:
+            if randint(1, 30) == 1:
+                self.idle = False
+
+        # добавляем g (гравитацию)
+        self.fall_y += GRAVITY
+        if self.fall_y > 11:
+            self.fall_y = 11
+        dy += self.fall_y
+
+        if self.dash_speed:
+            self.fall_y = 0
+            dx += 2 * self.dash_speed
+            if self.sight:
+                self.dash_speed += 0.5
+            else:
+                self.dash_speed -= 0.5
+
+        # check current animation
+        if self.idle:
+            self.cur_animation = 0
+        if dx != 0:
+            self.cur_animation = 1
+        if self.dash_speed or self.attack_cooldown < 0.2:
+            self.cur_animation = 2
+            # в этом состоянии моб должен бить гг
+
+        # смотрим коллайды по x
+        self.rect.x += dx
+        if pygame.sprite.spritecollideany(self, platform_group):
+            if dy > 0:
+                self.rect.x -= dx
+        if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self,
+                                                                                              vertical_borders) or \
+                pygame.sprite.spritecollideany(self, enemy_borders):
+            self.rect.x -= dx
+            if self.moving == 'right':
+                self.moving = 'left'
+                self.sight = 1
+            else:
+                self.moving = 'right'
+                self.sight = 0
+
+        rect_l = pygame.Rect(self.rect[0] - self.width * 6, self.rect[1], self.width * 6, self.height)
+        rect_r = pygame.Rect(self.rect[0] + self.width * 6, self.rect[1], self.width * 6, self.height)
+        if self.hero.rect.colliderect(rect_l) and self.attack_cooldown >= 1 and self in enemy_group and randint(1,
+                                                                                                                5) == 1:
+            print('Моб атакует по левой стороне')
+            self.in_attack = True
+            self.sight = 1
+            self.attack_dash(-1)
+        if self.hero.rect.colliderect(rect_r) and self.attack_cooldown >= 1 and self in enemy_group and randint(1,
+                                                                                                                5) == 1:
+            print('Моб атакует по правой стороне')
+            self.in_attack = True
+            self.sight = 0
+            self.attack_dash(1)
+
+        # смотрим коллайды по y (где-то и по х, и по у)
+        self.rect.y += dy
+
+        if pygame.sprite.spritecollideany(self, player_group):
+            if self.invulnerable_timer == 0 and (self.hero.dash_speed or self.hero.jump_on_enemy):
+                self.deal_damage()
+                self.invulnerable_timer = FPS * 0.5
+                print('мобу наносится урон')
+            elif self.hero.invulnerable_timer == 0 and not self.hero.dash_speed and self in enemy_group:
+                self.attack()
+                self.hero.invulnerable_timer = FPS
+                print('гг наносится урон')
+            self.hero.jump_on_enemy = False
+
+        if pygame.sprite.spritecollideany(self, horizontal_borders):
+            for i in self.base_health.base_health:
+                if i == 1:
+                    self.base_health.received_hit()
+
+        if pygame.sprite.spritecollideany(self, wall_group):
+            if dy < 0:
+                # персонаж стукается головой об стену
+                self.rect.y -= (dy + 0.1)
+                self.fall_y = 0
+            if dy > 0:
+                # коллайд с землей
+                self.jump_count = 0
+                self.rect.y -= (dy + 0.1)
+                self.fall_y = 0
+                self.in_air = False
+        else:
+            if not pygame.sprite.spritecollideany(self, ladder_group) and not (
+                    pygame.sprite.spritecollideany(self, platform_group)):
+                self.in_air = True
+                self.platform_check = False
+
+        if pygame.sprite.spritecollideany(self, platform_group):
+            flag = 0
+            if dy > 0 and not self.platform_check:
+                self.in_air = False
+                self.rect.y -= (dy + 0.1)
+                self.fall_y = 0
+                self.jump_count = 0
+                flag = 1
+            if not flag:
+                self.platform_check = True
+
+        if pygame.sprite.spritecollideany(self, trap_group):
+            self.fall_y = -11  # отскок от шипа (как прыжок)
+            if self.invulnerable_timer == 0:
+                self.base_health.received_hit()
+                self.invulnerable_timer = FPS
+
+        if self.attack_cooldown < 1:
+            self.attack_cooldown += 0.005
+
+        self.update()
+
+    def update(self):
+        # отрисовка спрайтов моба
+        try:
+            if self.animation_cooldown >= 1:
+                self.image = self.animation_list[self.cur_animation][self.cur_frame]
+                if self.sight:
+                    self.image = pygame.transform.flip(self.image, 1, 0)
+                self.cur_frame += 1
+                if self.cur_frame >= len(self.animation_list[self.cur_animation]):
+                    self.cur_frame = 0
+                    self.animation_cooldown = 0
+            else:
+                if self.cur_animation == 2:
+                    self.animation_cooldown += 0.08
+                else:
+                    self.animation_cooldown += 0.08
+            if self.invulnerable_timer > 0:
+                self.invulnerable_timer -= 1
+        except Exception:
+            self.cur_frame = 0
+
+    def attack_dash(self, n):
+        self.attack_cooldown = 0
+        self.dash_speed = 8 * n
 
 
 class MiniBoss(pygame.sprite.Sprite):
@@ -340,7 +590,6 @@ class MiniBoss(pygame.sprite.Sprite):
             self.animation_list.append(cur_animations_lst)
 
     def update(self):
-        # отрисовка спрайтов минибосса, нужен фикс
         try:
             if self.animation_cooldown >= 1:
                 self.image = self.animation_list[self.cur_animation][self.cur_frame]
@@ -1331,6 +1580,9 @@ def generate_level(filename, LEVEL_COUNT):
                         if layer == 11:
                             enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2)
                             enemies.append(enemy)
+                        if layer == 14:
+                            boss = Boss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2)
+                            enemies.append(boss)
                         if layer == 4:
                             temp.add(trap_group)
                         if layer == 3:
@@ -1513,6 +1765,7 @@ if __name__ == '__main__':
     win_screen_running = False
     death_screen_running = False
     inventory_running = False
+    room = 4
     while running:
         if menu_running:
             res = menu()
@@ -1593,6 +1846,12 @@ if __name__ == '__main__':
         hpBar.update(player)
         for enemy in enemies:
             check_enemy_on_screen(enemy, player)
+        if room >= 3:
+            projectiles.update()
+            room = 0
+        projectiles.draw(screen)
+        room += 1
+
         # Обновление экрана
         pygame.display.flip()
         clock.tick(FPS)
