@@ -123,6 +123,9 @@ menu_win_screen_button.rect = menu_win_screen_button.image.get_rect()
 menu_win_screen_button.rect.x = WIDTH // 2 - menu_win_screen_button.image.get_width() // 2
 menu_win_screen_button.rect.y = HEIGHT // 2 * 3 - menu_win_screen_button.image.get_height() // 2
 
+bar_inventory_image = load_image('data/images/interface/inventory/bar/0.png')
+select_bar_inventory_image = load_image('data/images/interface/inventory/select_bar/0.png')
+
 first_level_music = pygame.mixer.music.load('data/music/first_level.mp3')
 pygame.mixer.music.play(-1)
 
@@ -758,6 +761,7 @@ class Player(pygame.sprite.Sprite):
     #   print(self.animation_list)
 
     def used_medical_item(self, item):
+        print('asdasd')
         self.base_health.restore_health(self)
 
         item_id = item.id
@@ -1051,7 +1055,7 @@ class Player(pygame.sprite.Sprite):
         self.update_cd()
         print('sa')
         if key and push_event and self.item_cd == 1:
-            self.items['key'].pop()
+            self.items['key'].pop(-1)
             # открытие сундука, поздравление игрока
             push_event = False
             return True
@@ -1223,7 +1227,7 @@ class Health:
                 break
 
     def restore_health(self, hero):
-        if hero.soul.soul_state or 'heal' in hero.items:  # надо добавить айтемы в игру!!!!
+        if hero.soul.soul_state:  # надо добавить айтемы в игру!!!!
 
             for i in range(len(self.base_health) - 1):
 
@@ -1468,12 +1472,12 @@ def pause_screen():
 
 
 a = {
-    'medical': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 4, HEIGHT * 0.25 + 4, 75, 75)],
-    'attack': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 4 + 1 + 75, HEIGHT * 0.25 + 4, 75, 75)],
-    'defense': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 4 + 2 + 75 * 2, HEIGHT * 0.25 + 4, 75, 75)],
-    'soul': [load_image('data/images/items/soul_item/0.png', -1), pygame.Rect(WIDTH // 2 + 4, HEIGHT * 0.25 + 4 + 75 + 1, 75, 75)],
-    'key': [load_image('data/images/items/key_item/0.png', -1), pygame.Rect(WIDTH // 2 + 4 + 1 + 75, HEIGHT * 0.25 + 4 + 75 + 1, 75, 75)],
-    'misc': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 4 + 2 + 75 * 2, HEIGHT * 0.25 + 4 + 75 + 1, 75, 75)]}
+    'medical': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2, HEIGHT * 0.25, 95, 95)],
+    'attack': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 95 + 2, HEIGHT * 0.25, 95, 95)],
+    'defense': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 95 * 2 + 4, HEIGHT * 0.25, 95, 95)],
+    'soul': [load_image('data/images/items/soul_item/0.png', -1), pygame.Rect(WIDTH // 2, HEIGHT * 0.25 + 95 + 2, 95, 95)],
+    'key': [load_image('data/images/items/key_item/0.png', -1), pygame.Rect(WIDTH // 2 + 95 + 2, HEIGHT * 0.25 + 95 + 2, 95, 95)],
+    'misc': [load_image('data/images/entities/player/hero.png', -1), pygame.Rect(WIDTH // 2 + 95 * 2 + 4, HEIGHT * 0.25 + 95 + 2, 95, 95)]}
 
 
 def inventory():
@@ -1484,12 +1488,12 @@ def inventory():
     rect = []
     while inventory_running:
         screen.fill((0, 0, 0))
-        pygame.draw.rect(screen, (0, 0, 255), (WIDTH // 2, HEIGHT * 0.25, 75 * 3 + 10, 75 * 2 + 10), 1)
         if highlight:
-            pygame.draw.rect(screen, (255, 0, 0), rect, 1)
+            screen.blit(select_bar_inventory_image, rect)
         for i in player.items.keys():
             if len(player.items[i]) > 0:
                 screen.blit(a[i][0], a[i][1])
+            screen.blit(bar_inventory_image, (a[i][1][0], a[i][1][1]))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -1501,12 +1505,8 @@ def inventory():
                 for i in a.keys():
                     if a[i][1].collidepoint(event.pos) and len(player.items[i]) > 0:
                         player.chosen_item = i
-            if event.type == pygame.MOUSEMOTION:
-                highlight = False
-                for i in a.keys():
-                    if a[i][1].collidepoint(event.pos) and len(player.items[i]) > 0:
                         highlight = True
-                        rect = a[i][1][0] - 5, a[i][1][1] - 5, a[i][1][2] + 5, a[i][1][3] + 5
+                        rect = a[i][1][0], a[i][1][1]
 
             pygame.display.flip()
 
@@ -1570,7 +1570,7 @@ if __name__ == '__main__':
                                 player.used_misc_item(player.items[player.chosen_item][-1])
                     except Exception:
                         push_event = False
-                        print(push_event)
+                        print(player.items)
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_a:
                     moving_left = False
