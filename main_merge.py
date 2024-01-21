@@ -470,13 +470,11 @@ class Boss(pygame.sprite.Sprite):
         if self.hero.rect.colliderect(rect_l) and self.attack_cooldown >= 1 and self in enemy_group and randint(1,
                                                                                                                 5) == 1:
             print('Моб атакует по левой стороне')
-            self.in_attack = True
             self.sight = 1
             self.attack_dash(-1)
         if self.hero.rect.colliderect(rect_r) and self.attack_cooldown >= 1 and self in enemy_group and randint(1,
                                                                                                                 5) == 1:
             print('Моб атакует по правой стороне')
-            self.in_attack = True
             self.sight = 0
             self.attack_dash(1)
 
@@ -522,7 +520,6 @@ class Boss(pygame.sprite.Sprite):
                 self.in_air = False
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
-                self.jump_count = 0
                 flag = 1
             if not flag:
                 self.platform_check = True
@@ -551,7 +548,7 @@ class Boss(pygame.sprite.Sprite):
                     self.animation_cooldown = 0
             else:
                 if self.cur_animation == 2:
-                    self.animation_cooldown += 0.08
+                    self.animation_cooldown += 0.05
                 else:
                     self.animation_cooldown += 0.08
             if self.invulnerable_timer > 0:
@@ -901,6 +898,8 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.y += dy
 
         if pygame.sprite.spritecollideany(self, player_group):
+            if self.hero.jump_on_enemy:
+                self.hero.fall_y = -11
             if self.invulnerable_timer == 0 and (self.hero.dash_speed or self.hero.jump_on_enemy):
                 self.deal_damage()
                 self.invulnerable_timer = FPS * 0.5
@@ -1140,7 +1139,6 @@ class Player(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollideany(self, enemy_group):
             if dy > 0.5:
-                self.fall_y = -11
                 self.jump_on_enemy = True
 
         if pygame.sprite.spritecollideany(self, ladder_group):
