@@ -1204,10 +1204,12 @@ class Player(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, exit_group):
             for i in all_sprites:
                 i.kill()
+            score = self.exp.score
             global player, item, level_count
             level_count += 1
             if level_count < 2:
                 player, item = generate_level(file_name2, level_count)
+                player.exp.score = score
             else:
                 level_count = 0
                 global win_screen_running
@@ -1626,7 +1628,8 @@ def death_screen():
     stop_moving()
     while death_screen_running:  # экран смерти
         screen.blit(background_death_screen, (0, 0))
-        screen.blit(game_over_image, (WIDTH // 2 - game_over_image.get_width() // 2, HEIGHT * 0.25 - game_over_image.get_height() // 2))
+        screen.blit(game_over_image, (WIDTH // 2 - game_over_image.get_width() // 2,
+                                      HEIGHT * 0.25 - game_over_image.get_height() // 2))
         death_screen_group.draw(screen)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1641,6 +1644,7 @@ def death_screen():
                 if menu_death_screen_button.rect.collidepoint(event.pos):
                     menu_running = True
                     death_screen_running = False
+                    return
         pygame.display.flip()
 
 
@@ -1778,8 +1782,11 @@ if __name__ == '__main__':
         screen.fill(pygame.Color("black"))
         if running:
             if sum(player.base_health.base_health) == 0 and running:
-                death_screen_running = True
-                res = death_screen()
+                if sum(player.base_health.base_health) == 0 and running:
+                    death_screen_running = True
+                    res = death_screen()
+                    if res:
+                        player, items, hpBar = res
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
