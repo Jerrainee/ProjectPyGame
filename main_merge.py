@@ -175,6 +175,8 @@ class Score:
         if self.n >= FPS * 5:
             self.score -= 1
             self.n = 0
+
+
 class Tile(pygame.sprite.Sprite):
     def __init__(self, image, pos_x, pos_y, tile_width, tile_height, layer=None):
         super().__init__(tiles_group, all_sprites)
@@ -1264,7 +1266,6 @@ class Player(pygame.sprite.Sprite):
             if self.attack_buff:
                 enemy.deal_damage()
                 self.attack_buff = False
-        print('adasd')
         self.exp.add_score(25, 1)
 
     def received_hit(self):
@@ -1628,7 +1629,8 @@ def death_screen():
     stop_moving()
     while death_screen_running:  # экран смерти
         screen.blit(background_death_screen, (0, 0))
-        screen.blit(game_over_image, (WIDTH // 2 - game_over_image.get_width() // 2, HEIGHT * 0.25 - game_over_image.get_height() // 2))
+        screen.blit(game_over_image,
+                    (WIDTH // 2 - game_over_image.get_width() // 2, HEIGHT * 0.25 - game_over_image.get_height() // 2))
         death_screen_group.draw(screen)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1643,6 +1645,7 @@ def death_screen():
                 if menu_death_screen_button.rect.collidepoint(event.pos):
                     menu_running = True
                     death_screen_running = False
+                    return
         pygame.display.flip()
 
 
@@ -1656,7 +1659,8 @@ def win_screen():
         font = pygame.font.Font(None, 50)
         text = font.render(f"SCORE: {player.exp.score}", True, (100, 255, 100))
         screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2))
-        screen.blit(you_win_image, (WIDTH // 2 - you_win_image.get_width() // 2, HEIGHT * 0.25 - you_win_image.get_height() // 2))
+        screen.blit(you_win_image,
+                    (WIDTH // 2 - you_win_image.get_width() // 2, HEIGHT * 0.25 - you_win_image.get_height() // 2))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -1738,7 +1742,8 @@ def inventory():
             screen.blit(select_bar_inventory_image, rect)
         for i in player.items.keys():
             if len(player.items[i]) > 0:
-                screen.blit(a[i][0], (a[i][1][0] + (95 - a[i][0].get_width()) // 2, a[i][1][1] + (95 - a[i][0].get_height()) // 2))
+                screen.blit(a[i][0], (
+                a[i][1][0] + (95 - a[i][0].get_width()) // 2, a[i][1][1] + (95 - a[i][0].get_height()) // 2))
             screen.blit(bar_inventory_image, (a[i][1][0], a[i][1][1]))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1782,6 +1787,8 @@ if __name__ == '__main__':
             if sum(player.base_health.base_health) == 0 and running:
                 death_screen_running = True
                 res = death_screen()
+                if res:
+                    player, items, hpBar = res
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
