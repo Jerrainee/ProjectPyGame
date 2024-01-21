@@ -172,7 +172,7 @@ class Score:
 
     def update(self):
         self.n += 1
-        if self.n >= FPS * 5:
+        if self.n >= FPS * 5 and self.score > 0:
             self.score -= 1
             self.n = 0
 class Tile(pygame.sprite.Sprite):
@@ -1681,6 +1681,9 @@ def pause_screen():
         surf.set_alpha(100)
         screen.blit(surf, (0, 0))
         pause_buttons_group.draw(screen)
+        font = pygame.font.Font(None, 75)
+        text = font.render(f"SCORE: {int(player.exp.score)}", True, (255, 255, 255))
+        screen.blit(text, (10, 10))
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
