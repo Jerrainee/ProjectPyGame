@@ -175,8 +175,6 @@ class Score:
         if self.n >= FPS * 5:
             self.score -= 1
             self.n = 0
-
-
 class Tile(pygame.sprite.Sprite):
     def __init__(self, image, pos_x, pos_y, tile_width, tile_height, layer=None):
         super().__init__(tiles_group, all_sprites)
@@ -472,13 +470,11 @@ class Boss(pygame.sprite.Sprite):
         if self.hero.rect.colliderect(rect_l) and self.attack_cooldown >= 1 and self in enemy_group and randint(1,
                                                                                                                 5) == 1:
             print('Моб атакует по левой стороне')
-            self.in_attack = True
             self.sight = 1
             self.attack_dash(-1)
         if self.hero.rect.colliderect(rect_r) and self.attack_cooldown >= 1 and self in enemy_group and randint(1,
                                                                                                                 5) == 1:
             print('Моб атакует по правой стороне')
-            self.in_attack = True
             self.sight = 0
             self.attack_dash(1)
 
@@ -524,7 +520,6 @@ class Boss(pygame.sprite.Sprite):
                 self.in_air = False
                 self.rect.y -= (dy + 0.1)
                 self.fall_y = 0
-                self.jump_count = 0
                 flag = 1
             if not flag:
                 self.platform_check = True
@@ -553,7 +548,7 @@ class Boss(pygame.sprite.Sprite):
                     self.animation_cooldown = 0
             else:
                 if self.cur_animation == 2:
-                    self.animation_cooldown += 0.08
+                    self.animation_cooldown += 0.05
                 else:
                     self.animation_cooldown += 0.08
             if self.invulnerable_timer > 0:
@@ -903,6 +898,8 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.y += dy
 
         if pygame.sprite.spritecollideany(self, player_group):
+            if self.hero.jump_on_enemy:
+                self.hero.fall_y = -11
             if self.invulnerable_timer == 0 and (self.hero.dash_speed or self.hero.jump_on_enemy):
                 self.deal_damage()
                 self.invulnerable_timer = FPS * 0.5
@@ -1142,7 +1139,6 @@ class Player(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollideany(self, enemy_group):
             if dy > 0.5:
-                self.fall_y = -11
                 self.jump_on_enemy = True
 
         if pygame.sprite.spritecollideany(self, ladder_group):
@@ -1208,10 +1204,12 @@ class Player(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, exit_group):
             for i in all_sprites:
                 i.kill()
+            score = self.exp.score
             global player, item, level_count
             level_count += 1
             if level_count < 2:
                 player, item = generate_level(file_name2, level_count)
+                player.exp.score = score
             else:
                 level_count = 0
                 global win_screen_running
@@ -1266,6 +1264,7 @@ class Player(pygame.sprite.Sprite):
             if self.attack_buff:
                 enemy.deal_damage()
                 self.attack_buff = False
+        print('adasd')
         self.exp.add_score(25, 1)
 
     def received_hit(self):
@@ -1629,8 +1628,8 @@ def death_screen():
     stop_moving()
     while death_screen_running:  # экран смерти
         screen.blit(background_death_screen, (0, 0))
-        screen.blit(game_over_image,
-                    (WIDTH // 2 - game_over_image.get_width() // 2, HEIGHT * 0.25 - game_over_image.get_height() // 2))
+        screen.blit(game_over_image, (WIDTH // 2 - game_over_image.get_width() // 2,
+                                      HEIGHT * 0.25 - game_over_image.get_height() // 2))
         death_screen_group.draw(screen)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1659,8 +1658,7 @@ def win_screen():
         font = pygame.font.Font(None, 50)
         text = font.render(f"SCORE: {player.exp.score}", True, (100, 255, 100))
         screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2))
-        screen.blit(you_win_image,
-                    (WIDTH // 2 - you_win_image.get_width() // 2, HEIGHT * 0.25 - you_win_image.get_height() // 2))
+        screen.blit(you_win_image, (WIDTH // 2 - you_win_image.get_width() // 2, HEIGHT * 0.25 - you_win_image.get_height() // 2))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -1742,8 +1740,7 @@ def inventory():
             screen.blit(select_bar_inventory_image, rect)
         for i in player.items.keys():
             if len(player.items[i]) > 0:
-                screen.blit(a[i][0], (
-                a[i][1][0] + (95 - a[i][0].get_width()) // 2, a[i][1][1] + (95 - a[i][0].get_height()) // 2))
+                screen.blit(a[i][0], (a[i][1][0] + (95 - a[i][0].get_width()) // 2, a[i][1][1] + (95 - a[i][0].get_height()) // 2))
             screen.blit(bar_inventory_image, (a[i][1][0], a[i][1][1]))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1785,10 +1782,11 @@ if __name__ == '__main__':
         screen.fill(pygame.Color("black"))
         if running:
             if sum(player.base_health.base_health) == 0 and running:
-                death_screen_running = True
-                res = death_screen()
-                if res:
-                    player, items, hpBar = res
+                if sum(player.base_health.base_health) == 0 and running:
+                    death_screen_running = True
+                    res = death_screen()
+                    if res:
+                        player, items, hpBar = res
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
