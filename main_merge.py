@@ -88,12 +88,12 @@ mini_boss_image = load_image('data/images/entities/mini_boss/mini_boss.png', -1)
 dash_image = load_image('data/images/items/key/0.png', -1)
 
 play_pause_button = pygame.sprite.Sprite(pause_buttons_group)
-play_pause_button.image = load_image('data/images/interface/pause/play_button.png', -1)
+play_pause_button.image = load_image('data/images/interface/buttons/play_button.png', -1)
 play_pause_button.rect = play_pause_button.image.get_rect()
 play_pause_button.rect.x = WIDTH // 2 - play_pause_button.image.get_width() - 20
 play_pause_button.rect.y = HEIGHT // 2 - play_pause_button.image.get_height() // 2
 menu_pause_button = pygame.sprite.Sprite(pause_buttons_group)
-menu_pause_button.image = load_image('data/images/interface/pause/menu_button.png', -1)
+menu_pause_button.image = load_image('data/images/interface/buttons/menu_button.png', -1)
 menu_pause_button.rect = menu_pause_button.image.get_rect()
 menu_pause_button.rect.x = WIDTH // 2 + menu_pause_button.image.get_width() + 20
 menu_pause_button.rect.y = HEIGHT // 2 - menu_pause_button.image.get_height() // 2
@@ -106,23 +106,25 @@ start_menu_button.rect.x = WIDTH // 2 - start_menu_button.image.get_width() // 2
 start_menu_button.rect.y = HEIGHT // 2 - start_menu_button.image.get_height() // 2
 
 background_death_screen = load_image('data/images/interface/death_screen/background.png')
+game_over_image = load_image('data/images/interface/death_screen/game_over.png', -1)
 restart_death_screen_button = pygame.sprite.Sprite(death_screen_group)
-restart_death_screen_button.image = load_image('data/images/interface/death_screen/restart_button.png', -1)
+restart_death_screen_button.image = load_image('data/images/interface/death_screen/restart_button.png')
 restart_death_screen_button.rect = restart_death_screen_button.image.get_rect()
-restart_death_screen_button.rect.x = WIDTH // restart_death_screen_button.image.get_width() - 20
-restart_death_screen_button.rect.y = HEIGHT // restart_death_screen_button.image.get_width() - 20
+restart_death_screen_button.rect.x = WIDTH // 2 - restart_death_screen_button.image.get_width() - 20
+restart_death_screen_button.rect.y = HEIGHT * 0.75 - restart_death_screen_button.image.get_height() // 2
 menu_death_screen_button = pygame.sprite.Sprite(death_screen_group)
-menu_death_screen_button.image = load_image('data/images/interface/death_screen/menu_button.png')
+menu_death_screen_button.image = load_image('data/images/interface/buttons/menu_button.png', -1)
 menu_death_screen_button.rect = menu_death_screen_button.image.get_rect()
-menu_death_screen_button.rect.x = WIDTH // 2 + menu_death_screen_button.image.get_width() // 2 + 20
-menu_death_screen_button.rect.y = HEIGHT // 4 * 3
+menu_death_screen_button.rect.x = WIDTH // 2 + menu_death_screen_button.image.get_width() + 20
+menu_death_screen_button.rect.y = HEIGHT * 0.75 - menu_death_screen_button.image.get_height() // 2
 
 background_win_sreen = load_image('data/images/interface/win_screen/background.png')
+you_win_image = load_image('data/images/interface/win_screen/you_win.jpg', -1)
 menu_win_screen_button = pygame.sprite.Sprite(win_screen_group)
-menu_win_screen_button.image = load_image('data/images/interface/win_screen/menu_button.png')
+menu_win_screen_button.image = load_image('data/images/interface/buttons/menu_button.png', -1)
 menu_win_screen_button.rect = menu_win_screen_button.image.get_rect()
 menu_win_screen_button.rect.x = WIDTH // 2 - menu_win_screen_button.image.get_width() // 2
-menu_win_screen_button.rect.y = HEIGHT // 2 * 3 - menu_win_screen_button.image.get_height() // 2
+menu_win_screen_button.rect.y = HEIGHT * 0.75 - menu_win_screen_button.image.get_height() // 2
 
 bar_inventory_image = load_image('data/images/interface/inventory/bar/0.png')
 select_bar_inventory_image = load_image('data/images/interface/inventory/select_bar/0.png')
@@ -136,8 +138,9 @@ class Score:
         self.score = 0.0
         self.exp = 0.0
         self.level = 1
+        self.n = 0
 
-    def add_score(self, value, coef):
+    def add_score(self, value, coef=0):
         if coef == 0.0:
             self.score += value
 
@@ -163,9 +166,15 @@ class Score:
         self.exp = exp
 
     def remove_score(self, value):
+        print(self.score - value)
+        print('asdasfswagf')
         self.score -= value
 
-
+    def update(self):
+        self.n += 1
+        if self.n >= FPS * 5:
+            self.score -= 1
+            self.n = 0
 class Tile(pygame.sprite.Sprite):
     def __init__(self, image, pos_x, pos_y, tile_width, tile_height, layer=None):
         super().__init__(tiles_group, all_sprites)
@@ -357,6 +366,7 @@ class Boss(pygame.sprite.Sprite):
 
         else:
             should_drop_anything = False
+        player.exp.add_score(200)
         self.kill()
 
         print("Death of Boss validated. Deleting boss.")
@@ -784,6 +794,7 @@ class Enemy(pygame.sprite.Sprite):
             self.drop_items()
 
         print("Death of enemy validated. Deleting entity.")
+        player.exp.add_score(75)
         self.kill()
         del self
 
@@ -862,7 +873,7 @@ class Enemy(pygame.sprite.Sprite):
                 self.rect.x -= dx
         if pygame.sprite.spritecollideany(self, wall_group) or pygame.sprite.spritecollideany(self,
                                                                                               vertical_borders) or pygame.sprite.spritecollideany(
-                self, enemy_borders):
+            self, enemy_borders):
             self.rect.x -= dx
             if self.moving == 'right':
                 self.moving = 'left'
@@ -873,12 +884,14 @@ class Enemy(pygame.sprite.Sprite):
 
         rect_l = pygame.Rect(self.rect[0] - self.width * 6, self.rect[1], self.width * 6, self.height)
         rect_r = pygame.Rect(self.rect[0] + self.width * 6, self.rect[1], self.width * 6, self.height)
-        if self.hero.rect.colliderect(rect_l) and self.attack_cooldown >= 1 and self in enemy_group and randint(1, 5) == 1:
+        if self.hero.rect.colliderect(rect_l) and self.attack_cooldown >= 1 and self in enemy_group and randint(1,
+                                                                                                                5) == 1:
             print('Моб атакует по левой стороне')
             self.in_attack = True
             self.sight = 1
             self.attack_dash(-1)
-        if self.hero.rect.colliderect(rect_r) and self.attack_cooldown >= 1 and self in enemy_group and randint(1, 5) == 1:
+        if self.hero.rect.colliderect(rect_r) and self.attack_cooldown >= 1 and self in enemy_group and randint(1,
+                                                                                                                5) == 1:
             print('Моб атакует по правой стороне')
             self.in_attack = True
             self.sight = 0
@@ -966,7 +979,6 @@ class Enemy(pygame.sprite.Sprite):
         self.dash_speed = 8 * n
 
 
-
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y, scale):
         super().__init__(player_group, all_sprites)
@@ -1024,27 +1036,28 @@ class Player(pygame.sprite.Sprite):
         self.items['soul'].pop()
 
     def used_misc_item(self, item):
-        print("Can't use misc items.")
+        player.exp.score *= 2
 
     def picked_up_item(self, item):
         print('I picked up item')
         if item.type == 'medical':
             self.items['medical'].append(item)
-
+            player.exp.add_score(35)
         elif item.type == 'attack':
             self.items['attack'].append(item)
-
+            player.exp.add_score(40)
         elif item.type == 'defense':
             self.items['defense'].append(item)
-
+            player.exp.add_score(45)
         elif item.type == 'soul':
             self.items['soul'].append(item)
-
+            player.exp.add_score(50)
         elif item.type == 'key':
             self.items['key'].append(item)
-
+            player.exp.add_score(30)
         else:
             self.items['misc'].append(item)
+            player.exp.add_score(80)
         print(self.items)
 
     def move(self, moving_left, moving_right, jump, moving_down, dash):
@@ -1130,7 +1143,6 @@ class Player(pygame.sprite.Sprite):
                 self.fall_y = -11
                 self.jump_on_enemy = True
 
-
         if pygame.sprite.spritecollideany(self, ladder_group):
             self.jump_count = 0
             self.fall_y = 0
@@ -1196,11 +1208,16 @@ class Player(pygame.sprite.Sprite):
                 i.kill()
             global player, item, level_count
             level_count += 1
-            player, item = generate_level(file_name2, level_count)
+            if level_count < 2:
+                player, item = generate_level(file_name2, level_count)
+            else:
+                level_count = 0
+                global win_screen_running
+                win_screen_running = True
 
         # print(self.in_air)
         # print(self.fall_y)
-        #print(self.jump_on_enemy)
+        # print(self.jump_on_enemy)
 
         self.update()
 
@@ -1247,7 +1264,7 @@ class Player(pygame.sprite.Sprite):
             if self.attack_buff:
                 enemy.deal_damage()
                 self.attack_buff = False
-
+        print('adasd')
         self.exp.add_score(25, 1)
 
     def received_hit(self):
@@ -1438,13 +1455,13 @@ class Health:
                 break
 
     def restore_health(self, hero):
-            for i in range(len(self.base_health)):
+        for i in range(len(self.base_health)):
 
-                if self.base_health[i] == 0:
-                    self.base_health[i] = 1
-                    print(i)
-                    hero.soul_state = False
-                    break
+            if self.base_health[i] == 0:
+                self.base_health[i] = 1
+                print(i)
+                hero.soul_state = False
+                break
 
     def add_health(self):
         self.base_health = [1] + self.base_health
@@ -1470,6 +1487,7 @@ class Soul:
         self.soul_state = True
         self.soul_cond = 1
 
+
 class Camera:
     # зададим начальный сдвиг камеры
     def __init__(self):
@@ -1485,10 +1503,7 @@ class Camera:
         y = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
         x = min(0, x)  # Левая сторона
         y = min(0, y)  # Верхняя сторона
-        if level_count == 0:
-            SCALE = 6
-        elif level_count == 2:
-            SCALE = 3
+        SCALE = 6
         x = max(-(map.width * map.tilewidth * SCALE - WIDTH), x)  # Правая сторона
         y = max(-(map.height * map.tilewidth * SCALE - HEIGHT), y)  # Нижняя сторона
 
@@ -1538,7 +1553,7 @@ def generate_level(filename, LEVEL_COUNT):
                         if layer == 5:
                             temp.add(exit_group)
                         if layer == 12 and LEVEL_COUNT == 0:
-                            mini_boss = MiniBoss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55,7)
+                            mini_boss = MiniBoss(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 7)
 
                         if layer == 11 and LEVEL_COUNT == 0:
                             enemy = Enemy(new_player, x * 8 * SCALE, y * 8 * SCALE - 55, 2)
@@ -1585,7 +1600,9 @@ def stop_moving():
 def menu():
     pygame.mixer.music.stop()
     stop_moving()
-    global menu_running, running
+    global menu_running, running, dash_unlock, double_jump_unlock
+    dash_unlock = False
+    double_jump_unlock = False
     while menu_running:
         screen.blit(background_menu_image, (0, 0))
         menu_sprite_group.draw(screen)
@@ -1596,7 +1613,10 @@ def menu():
             if pygame.mouse.get_pressed()[0]:
                 if start_menu_button.rect.collidepoint(event.pos):
                     menu_running = False
-                    player, items = generate_level(file_name1, level_count)
+                    if level_count == 0:
+                        player, items = generate_level(file_name1, level_count)
+                    if level_count == 1:
+                        player, items = generate_level(file_name2, level_count)
                     hpBar = HealthBar(player)
                     pygame.mixer.music.play(-1)
                     return player, items, hpBar
@@ -1608,6 +1628,7 @@ def death_screen():
     stop_moving()
     while death_screen_running:  # экран смерти
         screen.blit(background_death_screen, (0, 0))
+        screen.blit(game_over_image, (WIDTH // 2 - game_over_image.get_width() // 2, HEIGHT * 0.25 - game_over_image.get_height() // 2))
         death_screen_group.draw(screen)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1628,15 +1649,18 @@ def death_screen():
 def win_screen():
     global win_screen_running, running, death_screen_running, menu_running
     stop_moving()
+    pygame.mixer.music.stop()
     while win_screen_running:  # финальный экран
+        screen.fill((0, 0, 0))
         win_screen_group.draw(screen)
         font = pygame.font.Font(None, 50)
-        text = font.render(f"SCORE: {player.exp}", True, (100, 255, 100))
-        screen.blit(text, (WIDTH // 2 - text.get_width() // 2, WIDTH // 2 - text.get_height() // 2))
+        text = font.render(f"SCORE: {player.exp.score}", True, (100, 255, 100))
+        screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2))
+        screen.blit(you_win_image, (WIDTH // 2 - you_win_image.get_width() // 2, HEIGHT * 0.25 - you_win_image.get_height() // 2))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-                death_screen_running = False
+                win_screen_running = False
             if pygame.mouse.get_pressed()[0]:
                 if menu_win_screen_button.rect.collidepoint(event.pos):
                     menu_running = True
@@ -1653,8 +1677,8 @@ def pause_screen():
         surf = pygame.Surface((WIDTH, HEIGHT))
         surf.fill((255, 255, 255))
         surf.set_alpha(100)
-        pause_buttons_group.draw(screen)
         screen.blit(surf, (0, 0))
+        pause_buttons_group.draw(screen)
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -1684,11 +1708,16 @@ def pause_screen():
 
 a = {
     'medical': [load_image('data/images/items/medical_item/0.png', -1), pygame.Rect(WIDTH // 2, HEIGHT * 0.25, 95, 95)],
-    'attack': [load_image('data/images/items/attack_item/0.png', -1), pygame.Rect(WIDTH // 2 + 95 + 2, HEIGHT * 0.25, 95, 95)],
-    'defense': [load_image('data/images/items/defence_item/0.png', -1), pygame.Rect(WIDTH // 2 + 95 * 2 + 4, HEIGHT * 0.25, 95, 95)],
-    'soul': [load_image('data/images/items/soul_item/0.png', -1), pygame.Rect(WIDTH // 2, HEIGHT * 0.25 + 95 + 2, 95, 95)],
-    'key': [load_image('data/images/items/key_item/0.png', -1), pygame.Rect(WIDTH // 2 + 95 + 2, HEIGHT * 0.25 + 95 + 2, 95, 95)],
-    'misc': [load_image('data/images/items/misc_item/0.png', -1), pygame.Rect(WIDTH // 2 + 95 * 2 + 4, HEIGHT * 0.25 + 95 + 2, 95, 95)]}
+    'attack': [load_image('data/images/items/attack_item/0.png', -1),
+               pygame.Rect(WIDTH // 2 + 95 + 2, HEIGHT * 0.25, 95, 95)],
+    'defense': [load_image('data/images/items/defence_item/0.png', -1),
+                pygame.Rect(WIDTH // 2 + 95 * 2 + 4, HEIGHT * 0.25, 95, 95)],
+    'soul': [load_image('data/images/items/soul_item/0.png', -1),
+             pygame.Rect(WIDTH // 2, HEIGHT * 0.25 + 95 + 2, 95, 95)],
+    'key': [load_image('data/images/items/key_item/0.png', -1),
+            pygame.Rect(WIDTH // 2 + 95 + 2, HEIGHT * 0.25 + 95 + 2, 95, 95)],
+    'misc': [load_image('data/images/items/misc_item/0.png', -1),
+             pygame.Rect(WIDTH // 2 + 95 * 2 + 4, HEIGHT * 0.25 + 95 + 2, 95, 95)]}
 
 
 def inventory():
@@ -1699,11 +1728,17 @@ def inventory():
     rect = []
     while inventory_running:
         screen.fill((0, 0, 0))
+        for sprite in all_sprites:
+            screen.blit(sprite.image, camera.apply(sprite))
+        surf = pygame.Surface((WIDTH, HEIGHT))
+        surf.fill((255, 255, 255))
+        surf.set_alpha(100)
+        screen.blit(surf, (0, 0))
         if highlight:
             screen.blit(select_bar_inventory_image, rect)
         for i in player.items.keys():
             if len(player.items[i]) > 0:
-                screen.blit(a[i][0], a[i][1])
+                screen.blit(a[i][0], (a[i][1][0] + (95 - a[i][0].get_width()) // 2, a[i][1][1] + (95 - a[i][0].get_height()) // 2))
             screen.blit(bar_inventory_image, (a[i][1][0], a[i][1][1]))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1736,9 +1771,6 @@ if __name__ == '__main__':
             res = menu()
             if res:
                 player, items, hpBar = res
-        if sum(player.base_health.base_health) == 0 and running:
-            death_screen_running = True
-            res = death_screen()
             if res:
                 player, items, hpBar = res
         if win_screen_running:
@@ -1746,80 +1778,84 @@ if __name__ == '__main__':
         if inventory_running:
             inventory()
         screen.fill(pygame.Color("black"))
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                pause_running = True
-                pause_screen()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_a:
-                    moving_left = True
-                if event.key == pygame.K_d:
-                    moving_right = True
-                if event.key == pygame.K_SPACE or event.key == pygame.K_w:
-                    jump = True
-                if event.key == pygame.K_s:
-                    moving_down = True
-                if event.key == pygame.K_LSHIFT and dash_unlock:
-                    dash = True
-                if event.key == pygame.K_f:
-                    inventory_running = True
-                    print('inventory')
-                if event.key == pygame.K_e:
-                    try:
-                        push_event = True
-                        if len(player.items[player.chosen_item]) > 0:
-                            if player.chosen_item == 'medical':
-                                player.used_medical_item(player.items[player.chosen_item][-1])
-                            if player.chosen_item == 'attack':
-                                player.used_attack_item(player.items[player.chosen_item][-1])
-                            if player.chosen_item == 'defense':
-                                player.used_defensive_item(player.items[player.chosen_item][-1])
-                            if player.chosen_item == 'soul':
-                                player.used_soul_item(player.items[player.chosen_item][-1])
-                            if player.chosen_item == 'misc':
-                                player.used_misc_item(player.items[player.chosen_item][-1])
-                    except Exception:
+        if running:
+            if sum(player.base_health.base_health) == 0 and running:
+                death_screen_running = True
+                res = death_screen()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    pause_running = True
+                    pause_screen()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_a:
+                        moving_left = True
+                    if event.key == pygame.K_d:
+                        moving_right = True
+                    if event.key == pygame.K_SPACE or event.key == pygame.K_w:
+                        jump = True
+                    if event.key == pygame.K_s:
+                        moving_down = True
+                    if event.key == pygame.K_LSHIFT and dash_unlock:
+                        dash = True
+                    if event.key == pygame.K_f:
+                        inventory_running = True
+                        print('inventory')
+                    if event.key == pygame.K_e:
+                        try:
+                            push_event = True
+                            if len(player.items[player.chosen_item]) > 0:
+                                if player.chosen_item == 'medical':
+                                    player.used_medical_item(player.items[player.chosen_item][-1])
+                                if player.chosen_item == 'attack':
+                                    player.used_attack_item(player.items[player.chosen_item][-1])
+                                if player.chosen_item == 'defense':
+                                    player.used_defensive_item(player.items[player.chosen_item][-1])
+                                if player.chosen_item == 'soul':
+                                    player.used_soul_item(player.items[player.chosen_item][-1])
+                                if player.chosen_item == 'misc':
+                                    player.used_misc_item(player.items[player.chosen_item][-1])
+                        except Exception:
+                            push_event = False
+                            print(player.items)
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_a:
+                        moving_left = False
+                    if event.key == pygame.K_d:
+                        moving_right = False
+                    if event.key == pygame.K_SPACE or event.key == pygame.K_w:
+                        jump = False
+                        double_jump_check = True
+                    if event.key == pygame.K_s:
+                        moving_down = False
+                    if event.key == pygame.K_LSHIFT and dash_unlock:
+                        dash = False
+                    if event.key == pygame.K_e:
                         push_event = False
-                        print(player.items)
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_a:
-                    moving_left = False
-                if event.key == pygame.K_d:
-                    moving_right = False
-                if event.key == pygame.K_SPACE or event.key == pygame.K_w:
-                    jump = False
-                    double_jump_check = True
-                if event.key == pygame.K_s:
-                    moving_down = False
-                if event.key == pygame.K_LSHIFT and dash_unlock:
-                    dash = False
-                if event.key == pygame.K_e:
-                    push_event = False
-                if event.type == pygame.K_f:
-                    pass  # закрытие инвентаря
+                    if event.type == pygame.K_f:
+                        pass  # закрытие инвентаря
 
-            if event.type == pygame.MOUSEMOTION:
-                pass
-        player.move(moving_left, moving_right, jump, moving_down, dash)
-        camera.update(player)
-        for i in items:
-            i.update()
-        for sprite in all_sprites:
-            screen.blit(sprite.image, camera.apply(sprite))
-        hpBar.update(player)
-        for enemy in enemies:
-            check_enemy_on_screen(enemy, player)
-        if room >= 3:
-            projectiles.update()
-            room = 0
-        projectiles.draw(screen)
-        room += 1
+                if event.type == pygame.MOUSEMOTION:
+                    pass
+            player.move(moving_left, moving_right, jump, moving_down, dash)
+            camera.update(player)
+            for i in items:
+                i.update()
+            for sprite in all_sprites:
+                screen.blit(sprite.image, camera.apply(sprite))
+            hpBar.update(player)
+            player.exp.update()
+            for enemy in enemies:
+                check_enemy_on_screen(enemy, player)
+            if room >= 3:
+                projectiles.update()
+                room = 0
+            projectiles.draw(screen)
+            room += 1
 
         # Обновление экрана
         pygame.display.flip()
         clock.tick(FPS)
 
 terminate()
-
